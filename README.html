@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>README - Ghost of the BIOS Theme</title>
+    <link rel="stylesheet" href="config.css">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* README Specific Styles */
+        .readme-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: var(--space-lg);
+            background: var(--tertiary-bg);
+            border: var(--border-width) solid var(--border-color);
+            font-family: var(--font-mono);
+        }
+
+        .readme-header {
+            text-align: center;
+            margin-bottom: var(--space-xl);
+            border-bottom: var(--border-thick) solid var(--accent-green);
+            padding-bottom: var(--space-lg);
+        }
+
+        .readme-title {
+            font-size: 2rem;
+            color: var(--accent-green);
+            text-shadow: var(--glow-green);
+            margin-bottom: var(--space-md);
+        }
+
+        .readme-subtitle {
+            font-size: var(--text-lg);
+            color: var(--text-secondary);
+            margin-bottom: var(--space-sm);
+        }
+
+        .readme-version {
+            font-size: var(--text-sm);
+            color: var(--accent-purple);
+            background: var(--secondary-bg);
+            padding: var(--space-xs) var(--space-sm);
+            border: var(--border-width) solid var(--accent-purple);
+            display: inline-block;
+        }
+
+        .section {
+            margin-bottom: var(--space-xl);
+            background: var(--secondary-bg);
+            border: var(--border-width) solid var(--border-color);
+            padding: var(--space-lg);
+        }
+
+        .section-title {
+            font-size: var(--text-xl);
+            color: var(--accent-green);
+            margin-bottom: var(--space-lg);
+            border-bottom: var(--border-width) solid var(--accent-green);
+            padding-bottom: var(--space-sm);
+        }
+
+        .subsection-title {
+            font-size: var(--text-lg);
+            color: var(--accent-purple);
+            margin: var(--space-lg) 0 var(--space-md) 0;
+        }
+
+        .code-block {
+            background: var(--primary-bg);
+            border: var(--border-width) solid var(--accent-blue);
+            padding: var(--space-md);
+            font-family: var(--font-mono);
+            font-size: var(--text-sm);
+            color: var(--text-primary);
+            overflow-x: auto;
+            margin: var(--space-md) 0;
+            position: relative;
+        }
+
+        .code-block::before {
+            content: attr(data-lang);
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: var(--accent-blue);
+            color: var(--primary-bg);
+            padding: var(--space-xs) var(--space-sm);
+            font-size: var(--text-xs);
+            font-weight: bold;
+        }
+
+        .file-structure {
+            background: var(--primary-bg);
+            border: var(--border-width) solid var(--accent-green);
+            padding: var(--space-md);
+            font-family: var(--font-mono);
+            font-size: var(--text-sm);
+            line-height: 1.6;
+        }
+
+        .file-structure .folder {
+            color: var(--accent-yellow);
+            font-weight: bold;
+        }
+
+        .file-structure .file {
+            color: var(--text-primary);
+        }
+
+        .file-structure .comment {
+            color: var(--text-secondary);
+        }
+
+        .config-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: var(--space-md) 0;
+            font-size: var(--text-sm);
+        }
+
+        .config-table th,
+        .config-table td {
+            border: var(--border-width) solid var(--border-color);
+            padding: var(--space-sm);
+            text-align: left;
+        }
+
+        .config-table th {
+            background: var(--secondary-bg);
+            color: var(--accent-green);
+            font-weight: bold;
+        }
+
+        .config-table .variable {
+            font-family: var(--font-mono);
+            color: var(--accent-blue);
+        }
+
+        .config-table .value {
+            font-family: var(--font-mono);
+            color: var(--accent-purple);
+        }
+
+        .warning-box {
+            background: var(--primary-bg);
+            border: var(--border-thick) solid var(--accent-red);
+            padding: var(--space-md);
+            margin: var(--space-md) 0;
+            box-shadow: var(--glow-red);
+        }
+
+        .warning-title {
+            color: var(--accent-red);
+            font-weight: bold;
+            margin-bottom: var(--space-sm);
+        }
+
+        .info-box {
+            background: var(--primary-bg);
+            border: var(--border-thick) solid var(--accent-blue);
+            padding: var(--space-md);
+            margin: var(--space-md) 0;
+            box-shadow: 0 0 var(--glow-intensity) var(--accent-blue);
+        }
+
+        .info-title {
+            color: var(--accent-blue);
+            font-weight: bold;
+            margin-bottom: var(--space-sm);
+        }
+
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .feature-list li {
+            padding: var(--space-xs) 0;
+            border-bottom: var(--border-width) solid var(--border-color);
+        }
+
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+
+        .feature-list li::before {
+            content: '► ';
+            color: var(--accent-green);
+            font-weight: bold;
+        }
+
+        .toc {
+            background: var(--primary-bg);
+            border: var(--border-width) solid var(--accent-green);
+            padding: var(--space-md);
+            margin-bottom: var(--space-xl);
+        }
+
+        .toc-title {
+            color: var(--accent-green);
+            font-weight: bold;
+            margin-bottom: var(--space-md);
+        }
+
+        .toc ul {
+            list-style: none;
+            padding-left: var(--space-md);
+        }
+
+        .toc a {
+            color: var(--text-primary);
+            text-decoration: none;
+            display: block;
+            padding: var(--space-xs) 0;
+            transition: color var(--anim-speed-normal);
+        }
+
+        .toc a:hover {
+            color: var(--accent-green);
+        }
+
+        .theme-preview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--space-md);
+            margin: var(--space-md) 0;
+        }
+
+        .theme-card {
+            background: var(--primary-bg);
+            border: var(--border-width) solid var(--border-color);
+            padding: var(--space-md);
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--anim-speed-normal);
+        }
+
+        .theme-card:hover {
+            border-color: var(--accent-green);
+            box-shadow: var(--glow-green);
+        }
+
+        .theme-name {
+            color: var(--accent-green);
+            font-weight: bold;
+            margin-bottom: var(--space-sm);
+        }
+
+        .theme-colors {
+            display: flex;
+            justify-content: center;
+            gap: var(--space-xs);
+            margin-bottom: var(--space-sm);
+        }
+
+        .color-swatch {
+            width: 20px;
+            height: 20px;
+            border: var(--border-width) solid var(--border-color);
+        }
+
+        .back-to-bios {
+            position: fixed;
+            top: var(--space-md);
+            right: var(--space-md);
+            background: var(--secondary-bg);
+            border: var(--border-width) solid var(--accent-green);
+            color: var(--accent-green);
+            padding: var(--space-sm) var(--space-md);
+            text-decoration: none;
+            font-family: var(--font-mono);
+            font-size: var(--text-sm);
+            transition: all var(--anim-speed-normal);
+            z-index: var(--z-navigation);
+        }
+
+        .back-to-bios:hover {
+            background: var(--accent-green);
+            color: var(--primary-bg);
+            box-shadow: var(--glow-green);
+        }
+
+        @media (max-width: 768px) {
+            .readme-container {
+                padding: var(--space-md);
+            }
+
+            .config-table {
+                font-size: var(--text-xs);
+            }
+
+            .code-block {
+                font-size: var(--text-xs);
+            }
+
+            .theme-preview {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body style="background: var(--primary-bg); padding: var(--space-lg) 0;">
+    <a href="index.html" class="back-to-bios">[ESC] RETURN TO BIOS</a>
+
+    <div class="readme-container">
+        <!-- Header -->
+        <header class="readme-header">
+            <h1 class="readme-title">GHOST OF THE BIOS</h1>
+            <div class="readme-subtitle">Neocities Theme Documentation</div>
+            <div class="readme-version">Version 2.1.666 - Spectral Edition</div>
+        </header>
+
+        <!-- Table of Contents -->
+        <nav class="toc">
+            <div class="toc-title">TABLE OF CONTENTS</div>
+            <ul>
+                <li><a href="#overview">1. Overview</a></li>
+                <li><a href="#installation">2. Installation</a></li>
+                <li><a href="#file-structure">3. File Structure</a></li>
+                <li><a href="#customization">4. Customization Guide</a>
+                    <ul>
+                        <li><a href="#color-schemes">4.1 Color Schemes</a></li>
+                        <li><a href="#typography">4.2 Typography</a></li>
+                        <li><a href="#effects">4.3 Visual Effects</a></li>
+                        <li><a href="#responsive">4.4 Responsive Settings</a></li>
+                    </ul>
+                </li>
+                <li><a href="#pages">5. Page Components</a></li>
+                <li><a href="#javascript">6. JavaScript Functionality</a></li>
+                <li><a href="#troubleshooting">7. Troubleshooting</a></li>
+                <li><a href="#credits">8. Credits & License</a></li>
+            </ul>
+        </nav>
+
+        <!-- Overview Section -->
+        <section class="section" id="overview">
+            <h2 class="section-title">1. OVERVIEW</h2>
+            
+            <p>Ghost of the BIOS is a retro-futuristic Neocities theme that simulates a haunted computer BIOS interface. The theme features dark monochrome colors with glowing green and purple accents, creating an atmosphere of digital paranoia and spectral computing.</p>
+
+            <h3 class="subsection-title">Key Features</h3>
+            <ul class="feature-list">
+                <li>Authentic BIOS-style interface with boot sequence</li>
+                <li>Fully customizable color schemes via CSS variables</li>
+                <li>5 complete pages: Home, Logs, Memories, Terminal, Corrupted Files</li>
+                <li>Interactive JavaScript components with sound effects</li>
+                <li>Responsive design that works on all screen sizes</li>
+                <li>Modular CSS architecture for easy customization</li>
+                <li>Accessibility features and reduced motion support</li>
+                <li>Ghost and glitch effects with performance optimization</li>
+            </ul>
+
+            <div class="info-box">
+                <div class="info-title">COMPATIBILITY</div>
+                <p>This theme is designed for modern browsers and works best on Neocities. All effects degrade gracefully on older browsers.</p>
+            </div>
+        </section>
+
+        <!-- Installation Section -->
+        <section class="section" id="installation">
+            <h2 class="section-title">2. INSTALLATION</h2>
+
+            <h3 class="subsection-title">Quick Setup</h3>
+            <ol>
+                <li>Upload all files to your Neocities root directory</li>
+                <li>Set <code>index.html</code> as your main page</li>
+                <li>Customize colors in <code>config.css</code> (optional)</li>
+                <li>Test all pages to ensure proper functionality</li>
+            </ol>
+
+            <h3 class="subsection-title">Required Files</h3>
+            <div class="code-block" data-lang="FILES">
+index.html          ← Main BIOS interface
+logs.html           ← System logs viewer  
+memories.html       ← Memory/gallery page
+terminal.html       ← Chat terminal
+corrupted.html      ← File browser
+config.css          ← Customization variables
+style.css           ← Main stylesheet  
+script.js           ← Core JavaScript
+README.html         ← This documentation
+            </div>
+
+            <div class="warning-box">
+                <div class="warning-title">IMPORTANT</div>
+                <p>Do not rename the CSS or JS files as they are referenced by all HTML pages. If you must rename them, update all &lt;link&gt; and &lt;script&gt; tags accordingly.</p>
+            </div>
+        </section>
+
+        <!-- File Structure Section -->
+        <section class="section" id="file-structure">
+            <h2 class="section-title">3. FILE STRUCTURE</h2>
+
+            <div class="file-structure">
+<span class="folder">GHOST_BIOS_THEME/</span>
+├── <span class="file">index.html</span>          <span class="comment"># Main BIOS interface with system status</span>
+├── <span class="file">logs.html</span>           <span class="comment"># System logs with real-time updates</span>
+├── <span class="file">memories.html</span>       <span class="comment"># Memory viewer/gallery with tooltips</span>
+├── <span class="file">terminal.html</span>       <span class="comment"># Interactive chat terminal</span>
+├── <span class="file">corrupted.html</span>      <span class="comment"># File browser with corruption effects</span>
+├── <span class="file">config.css</span>          <span class="comment"># Customization variables and themes</span>
+├── <span class="file">style.css</span>           <span class="comment"># Main stylesheet with all components</span>
+├── <span class="file">script.js</span>           <span class="comment"># Core JavaScript functionality</span>
+└── <span class="file">README.html</span>         <span class="comment"># Documentation (this file)</span>
+            </div>
+
+            <h3 class="subsection-title">CSS Architecture</h3>
+            <ul>
+                <li><strong>config.css</strong> - Contains all customizable CSS variables</li>
+                <li><strong>style.css</strong> - Main styles using the config variables</li>
+                <li>Each page includes both files for consistent theming</li>
+                <li>Page-specific styles are included inline when needed</li>
+            </ul>
+        </section>
+
+        <!-- Customization Section -->
+        <section class="section" id="customization">
+            <h2 class="section-title">4. CUSTOMIZATION GUIDE</h2>
+
+            <p>The theme uses CSS custom properties (variables) for easy customization. All customization is done in the <code>config.css</code> file.</p>
+
+            <h3 class="subsection-title" id="color-schemes">4.1 Color Schemes</h3>
+            
+            <p>The default color scheme uses dark backgrounds with green and purple accents. You can easily change these by modifying the color variables:</p>
+
+            <table class="config-table">
+                <thead>
+                    <tr>
+                        <th>Variable</th>
+                        <th>Default Value</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="variable">--primary-bg</td>
+                        <td class="value">#0a0a0a</td>
+                        <td>Main background color</td>
+                    </tr>
+                    <tr>
+                        <td class="variable">--accent-green</td>
+                        <td class="value">#00ff41</td>
+                        <td>Primary accent (green glow)</td>
+                    </tr>
+                    <tr>
+                        <td class="variable">--accent-purple</td>
+                        <td class="value">#8a2be2</td>
+                        <td>Secondary accent (ghost color)</td>
+                    </tr>
+                    <tr>
+                        <td class="variable">--accent-red</td>
+                        <td class="value">#ff0040</td>
+                        <td>Error/warning color</td>
+                    </tr>
+                    <tr>
+                        <td class="variable">--text-primary</td>
+                        <td class="value">#c0c0c0</td>
+                        <td>Main text color</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3 class="subsection-title">Pre-built Color Themes</h3>
+            <p>The config.css file includes several commented-out color themes. Uncomment one to use it:</p>
+
+            <div class="theme-preview">
+                <div class="theme-card">
+                    <div class="theme-name">AMBER TERMINAL</div>
+                    <div class="theme-colors">
+                        <div class="color-swatch" style="background: #ff8000;"></div>
+                        <div class="color-swatch" style="background: #ffaa00;"></div>
+                        <div class="color-swatch" style="background: #000000;"></div>
+                    </div>
+                    <div>Classic amber monochrome</div>
+                </div>
+                <div class="theme-card">
+                    <div class="theme-name">BLUE SCREEN</div>
+                    <div class="theme-colors">
+                        <div class="color-swatch" style="background: #000080;"></div>
+                        <div class="color-swatch" style="background: #0000aa;"></div>
+                        <div class="color-swatch" style="background: #ffffff;"></div>
+                    </div>
+                    <div>Windows BSOD style</div>
+                </div>
+                <div class="theme-card">
+                    <div class="theme-name">MATRIX GREEN</div>
+                    <div class="theme-colors">
+                        <div class="color-swatch" style="background: #00ff00;"></div>
+                        <div class="color-swatch" style="background: #00aa00;"></div>
+                        <div class="color-swatch" style="background: #000000;"></div>
+                    </div>
+                    <div>Pure matrix aesthetic</div>
+                </div>
+                <div class="theme-card">
+                    <div class="theme-name">CYBERPUNK PINK</div>
+                    <div class="theme-colors">
+                        <div class="color-swatch" style="background: #ff0080;"></div>
+                        <div class="color-swatch" style="background: #8000ff;"></div>
+                        <div class="color-swatch" style="background: #0080ff;"></div>
+                    </div>
+                    <div>Neon cyberpunk vibes</div>
+                </div>
+            </div>
+
+            <div class="code-block" data-lang="CSS">
+/* Example: Activate the Amber Terminal theme */
+:root {
+  --accent-green: #ff8000;
+  --accent-purple: #ffaa00;
+  --text-primary: #ffaa00;
+  --text-bright: #ffdd00;
+}
+            </div>
+
+            <h3 class="subsection-title" id="typography">4.2 Typography</h3>
+            
+            <table class="config-table">
+                <thead>
+                    <tr>
+                        <th>Variable</th>
+                        <th>Default Value</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="variable">--font-mono</td>
+                        <td class="value">'Courier New', Monaco, monospace</td>
+                        <td>Monospace font stack</td>
+                    </tr>
+                    <tr>
+                        <td class="variable">--text-base</td>
+                        <td class="value">0.9rem</td>
+                        <td>Base font size</td>
+                    </tr>
+                    <tr>
+                        <td class="variable">--text-lg</td>
+                        <td class="value">1.1rem</td>
+                        <td>Large text size</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3 class="subsection-title" id="effects">4.3 Visual Effects</h3>
+            
+            <p>You can enable or disable various visual effects:</p>
+
+            <table class="config-table">
+                <thead>
+                    <tr>
+                        <th>Variable</th>
+                        <th>Values</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="variable">--enable-glow</td>
+                        <td class="value">block / none</td>
+                        <td>Enable/disable glow effects</td>
+                    </tr>
+                    <tr>
+                        <td class="variable">--enable-glitch</td>
+                        <td class="value">block / none</td>
+                        <td>Enable/disable glitch animations</td>
+                    </tr>
+                    <tr>
+                        <td class="variable">--enable-scan-lines</td>
+                        <td class="value">block / none</td>
+                        <td>Enable/disable CRT scanlines</td>
+                    </tr>
+                    <tr>
+                        <td class="variable">--glow-intensity</td>
+                        <td class="value">10px</td>
+                        <td>Glow effect strength</td>
+                    </tr>
+                    <tr>
+                        <td class="variable">--glitch-frequency</td>
+                        <td class="value">3s</td>
+                        <td>How often glitch occurs</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="code-block" data-lang="CSS">
+/* Example: Disable all effects for better performance */
+:root {
+  --enable-glow: none;
+  --enable-glitch: none;
+  --enable-scan-lines: none;
+}
+            </div>
+
+            <h3 class="subsection-title" id="responsive">4.4 Responsive Settings</h3>
+            
+            <p>The theme includes responsive breakpoints and mobile optimizations:</p>
+
+            <table class="config-table">
+                <thead>
+                    <tr>
+                        <th>Variable</th>
+                        <th>Default Value</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="variable">--breakpoint-md</td>
+                        <td class="value">768px</td>
+                        <td>Tablet breakpoint</td>
+                    </tr>
+                    <tr>
+                        <td class="variable">--breakpoint-sm</td>
+                        <td class="value">480px</td>
+                        <td>Mobile breakpoint</td>
+                    </tr>
+                    <tr>
+                        <td class="variable">--sidebar-width</td>
+                        <td class="value">250px</td>
+                        <td>Sidebar width on desktop</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Pages Section -->
+        <section class="section" id="pages">
+            <h2 class="section-title">5. PAGE COMPONENTS</h2>
+
+            <h3 class="subsection-title">index.html - Main BIOS Interface</h3>
+            <ul>
+                <li>Boot screen animation with skip functionality</li>
+                <li>System status display with real-time updates</li>
+                <li>Quick action buttons with popup dialogs</li>
+                <li>System vitals monitoring sidebar</li>
+                <li>Ghost process list with random updates</li>
+            </ul>
+
+            <h3 class="subsection-title">memories.html - Memory Viewer</h3>
+            <ul>
+                <li>Grid/list view toggle for memory sectors</li>
+                <li>Hover tooltips with metadata</li>
+                <li>Expandable modal windows for detailed analysis</li>
+                <li>Filter system by data type</li>
+                <li>Hex dump viewer mode</li>
+            </ul>
+
+            <h3 class="subsection-title">terminal.html - Chat Interface</h3>
+            <ul>
+                <li>Draggable message system</li>
+                <li>Real-time ghost entity responses</li>
+                <li>Message corruption effects</li>
+                <li>Typing indicators and user presence</li>
+                <li>Context menus for message actions</li>
+            </ul>
+
+            <h3 class="subsection-title">logs.html - System Logs</h3>
+            <ul>
+                <li>Real-time log generation</li>
+                <li>Multi-level filtering (Info, Warning, Error, Ghost)</li>
+                <li>Search functionality with highlighting</li>
+                <li>Log statistics and analytics</li>
+                <li>Export functionality</li>
+            </ul>
+
+            <h3 class="subsection-title">corrupted.html - File Browser</h3>
+            <ul>
+                <li>File corruption simulation</li>
+                <li>Detailed file analysis panels</li>
+                <li>Failed download simulations</li>
+                <li>File status indicators</li>
+                <li>Quarantine and purge actions</li>
+            </ul>
+        </section>
+
+        <!-- JavaScript Section -->
+        <section class="section" id="javascript">
+            <h2 class="section-title">6. JAVASCRIPT FUNCTIONALITY</h2>
+
+            <h3 class="subsection-title">Core Features</h3>
+            <ul>
+                <li><strong>GhostBIOS Class</strong> - Main controller for system functionality</li>
+                <li><strong>Sound System</strong> - Web Audio API for retro sound effects</li>
+                <li><strong>Popup System</strong> - Modal dialogs and windows</li>
+                <li><strong>Keyboard Shortcuts</strong> - Function key navigation</li>
+                <li><strong>Easter Eggs</strong> - Hidden features and secret modes</li>
+            </ul>
+
+            <h3 class="subsection-title">Customizing JavaScript</h3>
+            <p>The JavaScript is modular and easy to extend. Key functions you can modify:</p>
+
+            <div class="code-block" data-lang="JAVASCRIPT">
+// Add custom ghost responses
+this.ghostResponses = [
+    "Your custom ghost message here",
+    "Another spooky message",
+    // Add more messages...
+];
+
+// Modify glitch frequency
+triggerGlitch() {
+    // Your custom glitch effects
+}
+
+// Add new popup content
+getPopupContent(type) {
+    // Add new popup types here
+}
+            </div>
+
+            <h3 class="subsection-title">Performance Optimization</h3>
+            <ul>
+                <li>Effects automatically disable on mobile devices</li>
+                <li>Respects user's reduced motion preferences</li>
+                <li>Efficient animation loops with cleanup</li>
+                <li>Lazy loading of heavy visual effects</li>
+            </ul>
+        </section>
+
+        <!-- Troubleshooting Section -->
+        <section class="section" id="troubleshooting">
+            <h2 class="section-title">7. TROUBLESHOOTING</h2>
+
+            <h3 class="subsection-title">Common Issues</h3>
+
+            <div class="warning-box">
+                <div class="warning-title">Boot Screen Stuck</div>
+                <p><strong>Problem:</strong> Boot screen doesn't disappear<br>
+                <strong>Solution:</strong> Press any key or wait 3 seconds. Check JavaScript console for errors.</p>
+            </div>
+
+            <div class="warning-box">
+                <div class="warning-title">Animations Not Working</div>
+                <p><strong>Problem:</strong> Glitch effects or glows not visible<br>
+                <strong>Solution:</strong> Check if effects are disabled in config.css or by reduced motion settings.</p>
+            </div>
+
+            <div class="warning-box">
+                <div class="warning-title">Mobile Display Issues</div>
+                <p><strong>Problem:</strong> Layout broken on mobile<br>
+                <strong>Solution:</strong> The theme automatically adjusts for mobile. Clear cache and reload.</p>
+            </div>
+
+            <h3 class="subsection-title">Browser Compatibility</h3>
+            <ul>
+                <li><strong>Chrome/Edge:</strong> Full compatibility with all effects</li>
+                <li><strong>Firefox:</strong> Full compatibility with all effects</li>
+                <li><strong>Safari:</strong> Most effects work, some WebAudio limitations</li>
+                <li><strong>Mobile Browsers:</strong> Effects automatically reduced for performance</li>
+            </ul>
+
+            <h3 class="subsection-title">Debugging Tips</h3>
+            <div class="code-block" data-lang="JAVASCRIPT">
+// Enable debug mode in browser console
+window.ghostBIOS.debugMode = true;
+
+// Check if CSS variables are loaded
+console.log(getComputedStyle(document.documentElement)
+    .getPropertyValue('--accent-green'));
+
+// Test audio functionality
+window.ghostBIOS.playSystemSound();
+            </div>
+        </section>
+
+        <!-- Credits Section -->
+        <section class="section" id="credits">
+            <h2 class="section-title">8. CREDITS & LICENSE</h2>
+
+            <h3 class="subsection-title">Theme Credits</h3>
+            <ul>
+                <li>Designed and developed by Claude (Anthropic)</li>
+                <li>Inspired by classic BIOS interfaces and retro computing</li>
+                <li>Built with vanilla HTML, CSS, and JavaScript</li>
+                <li>No external dependencies or frameworks</li>
+            </ul>
+
+            <h3 class="subsection-title">License</h3>
+            <p>This theme is released under the MIT License:</p>
+            <div class="code-block" data-lang="LICENSE">
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+            </div>
+
+            <h3 class="subsection-title">Contributing</h3>
+            <p>Feel free to modify and share this theme! If you create cool modifications or find bugs, consider sharing them with the Neocities community.</p>
+
+            <div class="info-box">
+                <div class="info-title">FINAL NOTES</div>
+                <p>Remember that the machine dreams, and we are those dreams made manifest. Embrace the glitch. Accept the ghost in the shell. And always check your reality.dll for corruption.</p>
+                <p style="text-align: center; margin-top: var(--space-md); color: var(--accent-purple);">
+                    ~ GHOST_BIOS.exe v2.1.666 ~
+                </p>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // Simple documentation enhancements
+        document.addEventListener('DOMContentLoaded', () => {
+            // Smooth scrolling for table of contents links
+            document.querySelectorAll('.toc a').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const target = document.querySelector(link.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({ behavior: 'smooth' });
+                    }
+                });
+            });
+
+            // Add copy functionality to code blocks
+            document.querySelectorAll('.code-block').forEach(block => {
+                block.addEventListener('click', () => {
+                    navigator.clipboard.writeText(block.textContent).then(() => {
+                        const originalBorder = block.style.borderColor;
+                        block.style.borderColor = 'var(--accent-green)';
+                        setTimeout(() => {
+                            block.style.borderColor = originalBorder;
+                        }, 1000);
+                    });
+                });
+            });
+
+            // Theme preview interactions
+            document.querySelectorAll('.theme-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const themeName = card.querySelector('.theme-name').textContent;
+                    alert(`To use the ${themeName} theme, uncomment the corresponding section in config.css and refresh the page.`);
+                });
+            });
+
+            // Add a simple scroll progress indicator
+            const scrollProgress = document.createElement('div');
+            scrollProgress.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 0%;
+                height: 2px;
+                background: var(--accent-green);
+                z-index: 9999;
+                transition: width 0.1s ease;
+            `;
+            document.body.appendChild(scrollProgress);
+
+            window.addEventListener('scroll', () => {
+                const scrollPercent = (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100;
+                scrollProgress.style.width = Math.min(scrollPercent, 100) + '%';
+            });
+        });
+    </script>
+</body>
+</html>
