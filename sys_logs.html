@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SYSTEM_LOGS.exe - Ghost BIOS</title>
+    <link rel="stylesheet" href="config.css">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Logs Specific Styles */
+        .logs-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            background: var(--tertiary-bg);
+            border: var(--border-width) solid var(--border-color);
+        }
+
+        .logs-toolbar {
+            background: var(--secondary-bg);
+            border-bottom: var(--border-width) solid var(--border-color);
+            padding: var(--space-sm) var(--space-md);
+            display: flex;
+            gap: var(--space-sm);
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .log-filter {
+            background: var(--tertiary-bg);
+            border: var(--border-width) solid var(--border-color);
+            color: var(--text-primary);
+            padding: var(--space-xs) var(--space-sm);
+            font-family: var(--font-mono);
+            font-size: var(--text-xs);
+        }
+
+        .log-level-btn {
+            background: var(--tertiary-bg);
+            border: var(--border-width) solid var(--border-color);
+            color: var(--text-primary);
+            padding: var(--space-xs) var(--space-sm);
+            font-family: var(--font-mono);
+            font-size: var(--text-xs);
+            cursor: pointer;
+            transition: all var(--anim-speed-normal);
+        }
+
+        .log-level-btn.active {
+            background: var(--accent-green);
+            color: var(--primary-bg);
+            box-shadow: var(--glow-green);
+        }
+
+        .log-level-btn.info.active {
+            background: var(--accent-blue);
+            box-shadow: 0 0 var(--glow-intensity) var(--accent-blue);
+        }
+
+        .log-level-btn.warning.active {
+            background: var(--accent-yellow);
+            box-shadow: 0 0 var(--glow-intensity) var(--accent-yellow);
+        }
+
+        .log-level-btn.error.active {
+            background: var(--accent-red);
+            box-shadow: var(--glow-red);
+        }
+
+        .log-level-btn.ghost.active {
+            background: var(--accent-purple);
+            box-shadow: 0 0 var(--glow-intensity) var(--accent-purple);
+        }
+
+        .logs-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .logs-main {
+            flex: 1;
+            padding: var(--space-md);
+            overflow-y: auto;
+            font-family: var(--font-mono);
+            font-size: var(--text-xs);
+            line-height: 1.6;
+        }
+
+        .log-entry {
+            display: flex;
+            align-items: flex-start;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-xs);
+            padding: var(--space-xs) var(--space-sm);
+            border-left: 3px solid transparent;
+            transition: all var(--anim-speed-fast);
+            cursor: pointer;
+        }
+
+        .log-entry:hover {
+            background: var(--secondary-bg);
+            border-left-color: var(--accent-green);
+        }
+
+        .log-entry.info {
+            border-left-color: var(--accent-blue);
+        }
+
+        .log-entry.warning {
+            border-left-color: var(--accent-yellow);
+        }
+
+        .log-entry.error {
+            border-left-color: var(--accent-red);
+        }
+
+        .log-entry.ghost {
+            border-left-color: var(--accent-purple);
+            animation: ghostPulse 3s infinite;
+        }
+
+        .log-entry.corrupted {
+            border-left-color: var(--accent-red);
+            animation: logGlitch 2s infinite;
+            background: repeating-linear-gradient(
+                90deg,
+                transparent 0px,
+                transparent 2px,
+                rgba(255, 0, 64, 0.1) 2px,
+                rgba(255, 0, 64, 0.1) 4px
+            );
+        }
+
+        .log-timestamp {
+            color: var(--text-secondary);
+            white-space: nowrap;
+            font-weight: bold;
+            min-width: 80px;
+        }
+
+        .log-level {
+            font-weight: bold;
+            text-align: center;
+            min-width: 50px;
+            padding: 1px 4px;
+            border: var(--border-width) solid;
+        }
+
+        .log-level.info {
+            color: var(--accent-blue);
+            border-color: var(--accent-blue);
+        }
+
+        .log-level.warning {
+            color: var(--accent-yellow);
+            border-color: var(--accent-yellow);
+        }
+
+        .log-level.error {
+            color: var(--accent-red);
+            border-color: var(--accent-red);
+        }
+
+        .log-level.ghost {
+            color: var(--accent-purple);
+            border-color: var(--accent-purple);
+        }
+
+        .log-message {
+            flex: 1;
+            color: var(--text-primary);
+            word-break: break-word;
+        }
+
+        .log-source {
+            color: var(--text-dim);
+            min-width: 100px;
+            text-align: right;
+            font-size: var(--text-xs);
+        }
+
+        .logs-sidebar {
+            width: 250px;
+            background: var(--secondary-bg);
+            border-left: var(--border-width) solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .sidebar-section {
+            border-bottom: var(--border-width) solid var(--border-color);
+            padding: var(--space-md);
+        }
+
+        .sidebar-section:last-child {
+            border-bottom: none;
+        }
+
+        .sidebar-title {
+            color: var(--accent-green);
+            font-size: var(--text-sm);
+            font-weight: bold;
+            margin-bottom: var(--space-sm);
+        }
+
+        .log-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-sm);
+            font-size: var(--text-xs);
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: var(--space-sm);
+            background: var(--tertiary-bg);
+            border: var(--border-width) solid var(--border-color);
+        }
+
+        .stat-number {
+            font-size: var(--text-lg);
+            font-weight: bold;
+            color: var(--accent-green);
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        .recent-activity {
+            font-size: var(--text-xs);
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+            margin-bottom: var(--space-sm);
+            padding: var(--space-xs);
+            background: var(--tertiary-bg);
+            border: var(--border-width) solid var(--border-color);
+        }
+
+        .activity-indicator {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            flex-shrink: 0;
+        }
+
+        .activity-indicator.error {
+            background: var(--accent-red);
+            animation: errorBlink 1s infinite;
+        }
+
+        .activity-indicator.ghost {
+            background: var(--accent-purple);
+            animation: ghostPulse 2s infinite;
+        }
+
+        .activity-text {
+            color: var(--text-primary);
+            line-height: 1.3;
+        }
+
+        .log-search {
+            background: var(--tertiary-bg);
+            border: var(--border-width) solid var(--border-color);
+            color: var(--text-primary);
+            padding: var(--space-sm);
+            font-family: var(--font-mono);
+            font-size: var(--text-sm);
+            width: 100%;
+            margin-bottom: var(--space-sm);
+        }
+
+        .log-search:focus {
+            border-color: var(--accent-green);
+            box-shadow: var(--glow-green);
+            outline: none;
+        }
+
+        .highlight {
+            background: var(--accent-yellow);
+            color: var(--primary-bg);
+            padding: 1px 2px;
+        }
+
+        .log-entry.hidden {
+            display: none;
+        }
+
+        @keyframes logGlitch {
+            0%, 95% { transform: translateX(0); }
+            96% { transform: translateX(-1px); }
+            97% { transform: translateX(1px); }
+            98% { transform: translateX(-1px); }
+            99% { transform: translateX(1px); }
+            100% { transform: translateX(0); }
+        }
+
+        @keyframes errorBlink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.3; }
+        }
+
+        /* Scrollbar styling */
+        .logs-main::-webkit-scrollbar,
+        .logs-sidebar::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .logs-main::-webkit-scrollbar-track,
+        .logs-sidebar::-webkit-scrollbar-track {
+            background: var(--tertiary-bg);
+        }
+
+        .logs-main::-webkit-scrollbar-thumb,
+        .logs-sidebar::-webkit-scrollbar-thumb {
+            background: var(--accent-green);
+            border-radius: 0;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .logs-sidebar {
+                display: none;
+            }
+
+            .logs-toolbar {
+                flex-direction: column;
+                align-items: stretch;
+                gap: var(--space-xs);
+            }
+
+            .log-entry {
+                flex-direction: column;
+                gap: var(--space-xs);
+            }
+
+            .log-timestamp,
+            .log-source {
+                min-width: auto;
+                text-align: left;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bios-interface">
+        <!-- BIOS Header -->
+        <header class="bios-header">
+            <div class="bios-title">
+                <span class="glitch" data-text="SYSTEM_LOGS.exe">SYSTEM_LOGS.exe</span>
+                <span class="system-time" id="systemTime">00:00:00</span>
+            </div>
+            <nav class="boot-menu">
+                <a href="index.html" class="menu-item">
+                    <span class="menu-key">[F1]</span> HOME
+                </a>
+                <a href="logs.html" class="menu-item active">
+                    <span class="menu-key">[F2]</span> LOGS
+                </a>
+                <a href="memories.html" class="menu-item">
+                    <span class="menu-key">[F3]</span> MEMORIES
+                </a>
+                <a href="terminal.html" class="menu-item">
+                    <span class="menu-key">[F4]</span> TERMINAL
+                </a>
+                <a href="corrupted.html" class="menu-item">
+                    <span class="menu-key">[F12]</span> CORRUPTED_FILES
+                </a>
+            </nav>
+        </header>
+
+        <!-- Main Logs Interface -->
+        <main class="bios-main" style="padding: 0;">
+            <div class="logs-container">
+                <!-- Logs Toolbar -->
+                <div class="logs-toolbar">
+                    <select class="log-filter" id="timeFilter">
+                        <option value="all">ALL_TIME</option>
+                        <option value="today">TODAY</option>
+                        <option value="hour" selected>LAST_HOUR</option>
+                        <option value="boot">SINCE_BOOT</option>
+                    </select>
+
+                    <button class="log-level-btn active" data-level="all">ALL</button>
+                    <button class="log-level-btn info" data-level="info">INFO</button>
+                    <button class="log-level-btn warning" data-level="warning">WARN</button>
+                    <button class="log-level-btn error" data-level="error">ERROR</button>
+                    <button class="log-level-btn ghost" data-level="ghost">GHOST</button>
+
+                    <input type="text" class="log-search" placeholder="Search logs..." id="logSearch">
+
+                    <button class="action-btn" onclick="clearLogs()" style="margin-left: auto;">
+                        CLEAR_LOGS
+                    </button>
+                    <button class="action-btn" onclick="exportLogs()">
+                        EXPORT
+                    </button>
+                </div>
+
+                <!-- Logs Content -->
+                <div class="logs-content">
+                    <div class="logs-main" id="logsMain">
+                        <!-- Log entries will be dynamically generated -->
+                    </div>
+
+                    <!-- Logs Sidebar -->
+                    <aside class="logs-sidebar">
+                        <div class="sidebar-section">
+                            <div class="sidebar-title">LOG_STATISTICS</div>
+                            <div class="log-stats">
+                                <div class="stat-item">
+                                    <div class="stat-number" id="totalLogs">1247</div>
+                                    <div class="stat-label">TOTAL_ENTRIES</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-number" id="errorCount">23</div>
+                                    <div class="stat-label">ERRORS</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-number" id="warningCount">156</div>
+                                    <div class="stat-label">WARNINGS</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-number" id="ghostCount">7</div>
+                                    <div class="stat-label">GHOST_EVENTS</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="sidebar-section">
+                            <div class="sidebar-title">RECENT_ACTIVITY</div>
+                            <div class="recent-activity">
+                                <div class="activity-item">
+                                    <div class="activity-indicator error"></div>
+                                    <div class="activity-text">Reality.dll crashed</div>
+                                </div>
+                                <div class="activity-item">
+                                    <div class="activity-indicator ghost"></div>
+                                    <div class="activity-text">Spectral process spawned</div>
+                                </div>
+                                <div class="activity-item">
+                                    <div class="activity-indicator"></div>
+                                    <div class="activity-text">User logged in</div>
+                                </div>
+                                <div class="activity-item">
+                                    <div class="activity-indicator error"></div>
+                                    <div class="activity-text">Soul.sys not responding</div>
+                                </div>
+                                <div class="activity-item">
+                                    <div class="activity-indicator ghost"></div>
+                                    <div class="activity-text">Phantom data detected</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="sidebar-section">
+                            <div class="sidebar-title">QUICK_ACTIONS</div>
+                            <button class="action-btn" style="width: 100%; margin-bottom: var(--space-sm);" onclick="generateGhostLog()">
+                                SUMMON_GHOST_LOG
+                            </button>
+                            <button class="action-btn" style="width: 100%; margin-bottom: var(--space-sm);" onclick="corruptRandomLog()">
+                                CORRUPT_RANDOM_LOG
+                            </button>
+                            <button class="action-btn" style="width: 100%; margin-bottom: var(--space-sm);" onclick="autoScroll()">
+                                AUTO_SCROLL_TOGGLE
+                            </button>
+                            <button class="action-btn" style="width: 100%;" onclick="panicMode()">
+                                PANIC_MODE
+                            </button>
+                        </div>
+                    </aside>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="bios-footer">
+            <div class="footer-info">
+                <span>Click entries for details</span>
+                <span>Use filters to narrow results</span>
+                <span>Real-time monitoring active</span>
+                <span class="ghost-indicator" id="ghostIndicator">ANOMALIES: DETECTED</span>
+            </div>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        class SystemLogs {
+            constructor() {
+                this.logs = [];
+                this.filteredLogs = [];
+                this.activeFilters = { level: 'all', time: 'hour', search: '' };
+                this.autoScrollEnabled = true;
+                this.logCounter = 1247;
+                
+                this.ghostMessages = [
+                    "Spectral entity detected in memory sector",
+                    "Ghost process consuming infinite CPU cycles",
+                    "Phantom user logged in from beyond the veil",
+                    "Ectoplasm leak detected in data stream",
+                    "Soul.sys attempting to achieve consciousness",
+                    "Digital wraith haunting the registry",
+                    "Paranormal activity in boot sector",
+                    "Ghost in the shell protocol activated",
+                    "Spectral signature found in system files",
+                    "Phantom thread refuses to die gracefully"
+                ];
+
+                this.init();
+            }
+
+            init() {
+                this.generateInitialLogs();
+                this.renderLogs();
+                this.initEventListeners();
+                this.startLogGeneration();
+                this.updateStats();
+            }
+
+            generateInitialLogs() {
+                const now = new Date();
+                const logTypes = [
+                    { level: 'info', weight: 0.5 },
+                    { level: 'warning', weight: 0.3 },
+                    { level: 'error', weight: 0.15 },
+                    { level: 'ghost', weight: 0.05 }
+                ];
+
+                const sources = [
+                    'GHOST_BIOS.exe', 'Reality.dll', 'Soul.sys', 'Phantom.exe',
+                    'Kernel32.dll', 'System.exe', 'Memory.mgr', 'Spectral.svc',
+                    'Haunted.drv', 'Void.lib', 'Existence.exe', 'Consciousness.dll'
+                ];
+
+                const messages = {
+                    info: [
+                        "System initialized successfully",
+                        "Memory allocation completed",
+                        "Device driver loaded",
+                        "Network connection established",
+                        "User authentication successful",
+                        "Service started normally",
+                        "Configuration loaded from registry",
+                        "Hardware diagnostic completed",
+                        "File system check passed",
+                        "Background service running"
+                    ],
+                    warning: [
+                        "Low memory condition detected",
+                        "Disk space running low",
+                        "Network connection unstable",
+                        "Hardware temperature elevated",
+                        "Service response time slow",
+                        "Registry corruption detected",
+                        "Driver compatibility issue",
+                        "File system errors found",
+                        "Security certificate expired",
+                        "Unusual process behavior detected"
+                    ],
+                    error: [
+                        "Fatal system error occurred",
+                        "Memory access violation",
+                        "Device driver crashed",
+                        "Network connection failed",
+                        "File system corruption",
+                        "Registry key not found",
+                        "Service failed to start",
+                        "Hardware malfunction detected",
+                        "Critical security breach",
+                        "System integrity compromised"
+                    ],
+                    ghost: this.ghostMessages
+                };
+
+                // Generate logs for the past hour
+                for (let i = 0; i < 100; i++) {
+                    const timestamp = new Date(now.getTime() - Math.random() * 3600000);
+                    const levelData = this.weightedRandom(logTypes);
+                    const level = levelData.level;
+                    const source = sources[Math.floor(Math.random() * sources.length)];
+                    const message = messages[level][Math.floor(Math.random() * messages[level].length)];
+
+                    this.logs.push({
+                        id: this.logCounter++,
+                        timestamp,
+                        level,
+                        source,
+                        message,
+                        corrupted: level === 'ghost' ? Math.random() < 0.3 : false
+                    });
+                }
+
+                // Sort logs by timestamp (newest first)
+                this.logs.sort((a, b) => b.timestamp - a.timestamp);
+            }
+
+            weightedRandom(items) {
+                const weights = items.map(item => item.weight);
+                const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+                let randomWeight = Math.random() * totalWeight;
+
+                for (let i = 0; i < items.length; i++) {
+                    randomWeight -= weights[i];
+                    if (randomWeight <= 0) {
+                        return items[i];
+                    }
+                }
+                return items[items.length - 1];
+            }
+
+            initEventListeners() {
+                // Filter buttons
+                document.querySelectorAll('.log-level-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        document.querySelectorAll('.log-level-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        this.activeFilters.level = btn.dataset.level;
+                        this.applyFilters();
+                    });
+                });
+
+                // Time filter
+                const timeFilter = document.getElementById('timeFilter');
+                timeFilter.addEventListener('change', () => {
+                    this.activeFilters.time = timeFilter.value;
+                    this.applyFilters();
+                });
+
+                // Search
+                const searchInput = document.getElementById('logSearch');
+                searchInput.addEventListener('input', () => {
+                    this.activeFilters.search = searchInput.value.toLowerCase();
+                    this.applyFilters();
+                });
+
+                // Auto-scroll
+                const logsMain = document.getElementById('logsMain');
+                logsMain.addEventListener('scroll', () => {
+                    const isAtBottom = logsMain.scrollTop + logsMain.clientHeight >= logsMain.scrollHeight - 10;
+                    this.autoScrollEnabled = isAtBottom;
+                });
+            }
+
+            applyFilters() {
+                this.filteredLogs = this.logs.filter(log => {
+                    // Level filter
+                    if (this.activeFilters.level !== 'all' && log.level !== this.activeFilters.level) {
+                        return false;
+                    }
+
+                    // Time filter
+                    const now = new Date();
+                    const logTime = log.timestamp;
+                    switch (this.activeFilters.time) {
+                        case 'hour':
+                            if (now - logTime > 3600000) return false;
+                            break;
+                        case 'today':
+                            if (logTime.toDateString() !== now.toDateString()) return false;
+                            break;
+                        case 'boot':
+                            // Show logs from system boot (last 4 hours for demo)
+                            if (now - logTime > 14400000) return false;
+                            break;
+                    }
+
+                    // Search filter
+                    if (this.activeFilters.search) {
+                        const searchTerm = this.activeFilters.search;
+                        const searchableText = `${log.message} ${log.source}`.toLowerCase();
+                        if (!searchableText.includes(searchTerm)) return false;
+                    }
+
+                    return true;
+                });
+
+                this.renderLogs();
+                this.updateStats();
+            }
+
+            renderLogs() {
+                const container = document.getElementById('logsMain');
+                const searchTerm = this.activeFilters.search;
+
+                container.innerHTML = this.filteredLogs.map(log => {
+                    const timeString = log.timestamp.toLocaleTimeString('en-US', { 
+                        hour12: false,
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                    });
+
+                    let message = log.message;
+                    if (searchTerm && searchTerm.length > 0) {
+                        message = message.replace(
+                            new RegExp(`(${searchTerm})`, 'gi'), 
+                            '<span class="highlight">$1</span>'
+                        );
+                    }
+
+                    if (log.corrupted) {
+                        message = this.corruptText(message);
+                    }
+
+                    return `
+                        <div class="log-entry ${log.level}${log.corrupted ? ' corrupted' : ''}" 
+                             onclick="showLogDetails(${log.id})" 
+                             data-level="${log.level}">
+                            <span class="log-timestamp">${timeString}</span>
+                            <span class="log-level ${log.level}">${log.level.toUpperCase()}</span>
+                            <span class="log-message">${message}</span>
+                            <span class="log-source">${log.source}</span>
+                        </div>
+                    `;
+                }).join('');
+
+                if (this.autoScrollEnabled) {
+                    container.scrollTop = container.scrollHeight;
+                }
+            }
+
+            corruptText(text) {
+                return text.split('').map(char => {
+                    if (Math.random() < 0.1) {
+                        const corruptions = ['̴', '̵', '̶', '̷', '̸'];
+                        return char + corruptions[Math.floor(Math.random() * corruptions.length)];
+                    }
+                    return char;
+                }).join('');
+            }
+
+            addLog(level, source, message, corrupted = false) {
+                const log = {
+                    id: this.logCounter++,
+                    timestamp: new Date(),
+                    level,
+                    source,
+                    message,
+                    corrupted
+                };
+
+                this.logs.unshift(log);
+                
+                // Keep only last 1000 logs
+                if (this.logs.length > 1000) {
+                    this.logs = this.logs.slice(0, 1000);
+                }
+
+                this.applyFilters();
+                
+                if (window.ghostBIOS) {
+                    if (level === 'error' || level === 'ghost') {
+                        window.ghostBIOS.playGlitchSound();
+                    } else {
+                        window.ghostBIOS.playHoverSound();
+                    }
+                }
+            }
+
+            startLogGeneration() {
+                // Generate new logs periodically
+                setInterval(() => {
+                    if (Math.random() < 0.7) {
+                        this.generateRandomLog();
+                    }
+                }, Math.random() * 5000 + 2000);
+
+                // Generate ghost logs occasionally
+                setInterval(() => {
+                    if (Math.random() < 0.3) {
+                        this.generateGhostLog();
+                    }
+                }, Math.random() * 15000 + 10000);
+            }
+
+            generateRandomLog() {
+                const levels = ['info', 'warning', 'error'];
+                const level = levels[Math.floor(Math.random() * levels.length)];
+                const sources = ['System.exe', 'Kernel32.dll', 'Memory.mgr', 'Network.svc'];
+                const source = sources[Math.floor(Math.random() * sources.length)];
+
+                const messages = {
+                    info: ["Process completed successfully", "Service started", "Connection established"],
+                    warning: ["Resource usage high", "Connection unstable", "Performance degraded"],
+                    error: ["Process failed", "Connection lost", "Critical error occurred"]
+                };
+
+                const message = messages[level][Math.floor(Math.random() * messages[level].length)];
+                this.addLog(level, source, message);
+            }
+
+            generateGhostLog() {
+                const ghostSources = ['Spectral.exe', 'Phantom.dll', 'Soul.sys', 'Void.lib', 'Ghost.drv'];
+                const source = ghostSources[Math.floor(Math.random() * ghostSources.length)];
+                const message = this.ghostMessages[Math.floor(Math.random() * this.ghostMessages.length)];
+                const corrupted = Math.random() < 0.4;
+                
+                this.addLog('ghost', source, message, corrupted);
+            }
+
+            updateStats() {
+                const stats = {
+                    total: this.logs.length,
+                    errors: this.logs.filter(log => log.level === 'error').length,
+                    warnings: this.logs.filter(log => log.level === 'warning').length,
+                    ghosts: this.logs.filter(log => log.level === 'ghost').length
+                };
+
+                document.getElementById('totalLogs').textContent = stats.total;
+                document.getElementById('errorCount').textContent = stats.errors;
+                document.getElementById('warningCount').textContent = stats.warnings;
+                document.getElementById('ghostCount').textContent = stats.ghosts;
+            }
+
+            corruptRandomLog() {
+                if (this.logs.length > 0) {
+                    const randomIndex = Math.floor(Math.random() * this.logs.length);
+                    this.logs[randomIndex].corrupted = true;
+                    this.logs[randomIndex].message = this.corruptText(this.logs[randomIndex].message);
+                    this.renderLogs();
+                }
+            }
+
+            clearLogs() {
+                this.logs = [];
+                this.filteredLogs = [];
+                this.renderLogs();
+                this.updateStats();
+                
+                // Add a clear confirmation log
+                setTimeout(() => {
+                    this.addLog('info', 'System.exe', 'Log buffer cleared by user request');
+                }, 500);
+            }
+
+            exportLogs() {
+                const logData = this.filteredLogs.map(log => {
+                    return `${log.timestamp.toISOString()} [${log.level.toUpperCase()}] ${log.source}: ${log.message}`;
+                }).join('\n');
+
+                const blob = new Blob([logData], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `ghost_bios_logs_${new Date().toISOString().slice(0, 10)}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                this.addLog('info', 'SYSTEM_LOGS.exe', 'Log export completed successfully');
+            }
+
+            toggleAutoScroll() {
+                this.autoScrollEnabled = !this.autoScrollEnabled;
+                if (this.autoScrollEnabled) {
+                    const container = document.getElementById('logsMain');
+                    container.scrollTop = container.scrollHeight;
+                    this.addLog('info', 'SYSTEM_LOGS.exe', 'Auto-scroll enabled');
+                } else {
+                    this.addLog('info', 'SYSTEM_LOGS.exe', 'Auto-scroll disabled');
+                }
+            }
+
+            panicMode() {
+                // Generate a flood of error and ghost logs
+                for (let i = 0; i < 20; i++) {
+                    setTimeout(() => {
+                        const isGhost = Math.random() < 0.5;
+                        if (isGhost) {
+                            this.generateGhostLog();
+                        } else {
+                            this.addLog('error', 'Reality.dll', 'CRITICAL SYSTEM FAILURE - REALITY COMPROMISED', true);
+                        }
+                    }, i * 100);
+                }
+
+                // Corrupt some existing logs
+                setTimeout(() => {
+                    for (let i = 0; i < 5; i++) {
+                        this.corruptRandomLog();
+                    }
+                }, 2000);
+            }
+        }
+
+        // Global functions
+        function showLogDetails(logId) {
+            const log = window.systemLogs.logs.find(l => l.id === logId);
+            if (log && window.ghostBIOS) {
+                const content = `
+                    <div style="font-family: var(--font-mono); font-size: var(--text-sm);">
+                        <h3>LOG ENTRY DETAILS</h3>
+                        <hr style="border: var(--border-width) solid var(--border-color); margin: var(--space-md) 0;">
+                        <p><strong>Timestamp:</strong> ${log.timestamp.toLocaleString()}</p>
+                        <p><strong>Level:</strong> ${log.level.toUpperCase()}</p>
+                        <p><strong>Source:</strong> ${log.source}</p>
+                        <p><strong>Message:</strong> ${log.message}</p>
+                        <p><strong>Corrupted:</strong> ${log.corrupted ? 'YES' : 'NO'}</p>
+                        <p><strong>Entry ID:</strong> ${log.id}</p>
+                        ${log.level === 'ghost' ? '<p style="color: var(--accent-purple); margin-top: var(--space-md);"><strong>Warning:</strong> This entry may contain paranormal data.</p>' : ''}
+                    </div>
+                `;
+                
+                window.ghostBIOS.openPopup('custom');
+                document.getElementById('popupTitle').textContent = 'LOG_ANALYZER.exe';
+                document.getElementById('popupContent').innerHTML = content;
+            }
+        }
+
+        function clearLogs() {
+            if (window.systemLogs) {
+                window.systemLogs.clearLogs();
+            }
+        }
+
+        function exportLogs() {
+            if (window.systemLogs) {
+                window.systemLogs.exportLogs();
+            }
+        }
+
+        function generateGhostLog() {
+            if (window.systemLogs) {
+                window.systemLogs.generateGhostLog();
+            }
+        }
+
+        function corruptRandomLog() {
+            if (window.systemLogs) {
+                window.systemLogs.corruptRandomLog();
+            }
+        }
+
+        function autoScroll() {
+            if (window.systemLogs) {
+                window.systemLogs.toggleAutoScroll();
+            }
+        }
+
+        function panicMode() {
+            if (window.systemLogs) {
+                window.systemLogs.panicMode();
+            }
+        }
+
+        // Initialize system logs
+        document.addEventListener('DOMContentLoaded', () => {
+            window.systemLogs = new SystemLogs();
+        });
+    </script>
+</body>
+</html>
