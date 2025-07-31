@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GHOST_BIOS.exe - System Boot</title>
+    <link rel="stylesheet" href="config.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="boot-screen" id="bootScreen">
+        <pre class="boot-text">
+            GHOST BIOS v2.1.666
+            Copyright (C) 20XX Spectral Systems Inc.
+            
+            Memory Test: 2048MB OK
+            Initializing haunted sectors...
+            [ERR] Sector 0x4A4B corrupted
+            [WARN] Ghost processes detected
+            
+            Press any key to continue...
+        </pre>
+    </div>
+
+    <div class="bios-interface" id="biosInterface" style="display: none;">
+        <!-- BIOS Header -->
+        <header class="bios-header">
+            <div class="bios-title">
+                <span class="glitch" data-text="GHOST_BIOS.exe">GHOST_BIOS.exe</span>
+                <span class="system-time" id="systemTime">00:00:00</span>
+            </div>
+            <nav class="boot-menu">
+                <a href="index.html" class="menu-item active">
+                    <span class="menu-key">[F1]</span> HOME
+                </a>
+                <a href="logs.html" class="menu-item">
+                    <span class="menu-key">[F2]</span> LOGS
+                </a>
+                <a href="memories.html" class="menu-item">
+                    <span class="menu-key">[F3]</span> MEMORIES
+                </a>
+                <a href="terminal.html" class="menu-item">
+                    <span class="menu-key">[F4]</span> TERMINAL
+                </a>
+                <a href="corrupted.html" class="menu-item">
+                    <span class="menu-key">[F12]</span> CORRUPTED_FILES
+                </a>
+            </nav>
+        </header>
+
+        <!-- Main BIOS Screen -->
+        <main class="bios-main">
+            <div class="terminal-window">
+                <div class="window-header">
+                    <span class="window-title">SYSTEM_STATUS.LOG</span>
+                    <div class="window-controls">
+                        <span class="control minimize">_</span>
+                        <span class="control maximize">□</span>
+                        <span class="control close">X</span>
+                    </div>
+                </div>
+                
+                <div class="window-content">
+                    <div class="system-info">
+                        <pre id="systemStatus">
+> System Status: HAUNTED
+> CPU: Intel Phantom 3.33GHz
+> RAM: 2048MB (666MB Reserved for Ghosts)
+> Storage: 1TB (999GB Corrupted)
+> Network: VOID_CONNECTION
+> Temperature: -273°C (Absolute Zero)
+
+[CRITICAL] Multiple spectral processes detected
+[WARNING] Memory leaks in sectors 0x666-0x999
+[INFO] Ghost in the shell protocol active
+
+Last known user activity:
+</pre>
+                        <div class="activity-log" id="activityLog">
+                            <div class="log-entry">
+                                <span class="timestamp">[23:59:59]</span> 
+                                <span class="action">User logged in from the void</span>
+                            </div>
+                            <div class="log-entry">
+                                <span class="timestamp">[23:59:58]</span> 
+                                <span class="action">Spectral process spawned</span>
+                            </div>
+                            <div class="log-entry">
+                                <span class="timestamp">[23:59:57]</span> 
+                                <span class="action">Memory corruption detected</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="quick-actions">
+                        <h3 class="section-title">► QUICK_ACCESS</h3>
+                        <div class="action-grid">
+                            <button class="action-btn" onclick="openPopup('diagnostics')">
+                                [DIAG] Run Diagnostics
+                            </button>
+                            <button class="action-btn" onclick="openPopup('memory')">
+                                [MEM] Memory Viewer
+                            </button>
+                            <button class="action-btn" onclick="openPopup('settings')">
+                                [SET] BIOS Settings
+                            </button>
+                            <button class="action-btn" onclick="triggerGlitch()">
+                                [???] Corrupted Entry
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Status Sidebar -->
+            <aside class="status-panel">
+                <div class="panel-section">
+                    <h4>SYSTEM_VITALS</h4>
+                    <div class="vital-bar">
+                        <span>CPU:</span>
+                        <div class="bar">
+                            <div class="bar-fill" style="width: 33%"></div>
+                        </div>
+                        <span>33%</span>
+                    </div>
+                    <div class="vital-bar">
+                        <span>RAM:</span>
+                        <div class="bar">
+                            <div class="bar-fill glitch-bar" style="width: 66%"></div>
+                        </div>
+                        <span>66%</span>
+                    </div>
+                    <div class="vital-bar">
+                        <span>TEMP:</span>
+                        <div class="bar">
+                            <div class="bar-fill" style="width: 0%"></div>
+                        </div>
+                        <span>-273°C</span>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h4>GHOST_PROCESSES</h4>
+                    <div class="process-list">
+                        <div class="process">
+                            <span class="pid">666</span>
+                            <span class="name">spectral.exe</span>
+                            <span class="cpu">??%</span>
+                        </div>
+                        <div class="process">
+                            <span class="pid">999</span>
+                            <span class="name">phantom.dll</span>
+                            <span class="cpu">∞%</span>
+                        </div>
+                        <div class="process">
+                            <span class="pid">404</span>
+                            <span class="name">soul.sys</span>
+                            <span class="cpu">0%</span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </main>
+
+        <!-- Footer Info -->
+        <footer class="bios-footer">
+            <div class="footer-info">
+                <span>F10: Save & Exit</span>
+                <span>F11: Load Defaults</span>
+                <span>ESC: Discard Changes</span>
+                <span class="ghost-indicator" id="ghostIndicator">GHOST: ACTIVE</span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Popup Windows -->
+    <div class="popup-overlay" id="popupOverlay">
+        <div class="popup-window" id="popupWindow">
+            <div class="popup-header">
+                <span class="popup-title" id="popupTitle">DIAGNOSTIC_TOOL.exe</span>
+                <span class="popup-close" onclick="closePopup()">X</span>
+            </div>
+            <div class="popup-content" id="popupContent">
+                <!-- Dynamic content loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
