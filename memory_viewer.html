@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MEMORY_VIEWER.exe - Ghost BIOS</title>
+    <link rel="stylesheet" href="config.css">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Memory Viewer Specific Styles */
+        .memory-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: var(--space-md);
+            padding: var(--space-md);
+        }
+
+        .memory-card {
+            background: var(--secondary-bg);
+            border: var(--border-width) solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+            transition: all var(--anim-speed-normal);
+            cursor: pointer;
+        }
+
+        .memory-card:hover {
+            border-color: var(--accent-green);
+            box-shadow: var(--glow-green);
+            transform: translateY(-2px);
+        }
+
+        .memory-card.corrupted {
+            animation: memoryGlitch 3s infinite;
+        }
+
+        .memory-header {
+            background: var(--tertiary-bg);
+            padding: var(--space-xs) var(--space-sm);
+            border-bottom: var(--border-width) solid var(--border-color);
+            font-size: var(--text-xs);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .memory-type {
+            color: var(--accent-blue);
+            font-weight: bold;
+        }
+
+        .memory-address {
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+        }
+
+        .memory-content {
+            padding: var(--space-md);
+            min-height: 150px;
+            position: relative;
+        }
+
+        .pixel-art {
+            width: 100%;
+            height: 120px;
+            background: var(--primary-bg);
+            border: var(--border-width) solid var(--border-color);
+            image-rendering: pixelated;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: var(--text-xs);
+            color: var(--text-secondary);
+        }
+
+        .memory-text {
+            font-size: var(--text-sm);
+            line-height: 1.4;
+            color: var(--text-primary);
+            max-height: 100px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .memory-text::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 20px;
+            background: linear-gradient(transparent, var(--secondary-bg));
+        }
+
+        .memory-metadata {
+            position: absolute;
+            bottom: var(--space-sm);
+            right: var(--space-sm);
+            font-size: var(--text-xs);
+            color: var(--text-dim);
+        }
+
+        .tooltip {
+            position: absolute;
+            background: var(--primary-bg);
+            border: var(--border-width) solid var(--accent-green);
+            padding: var(--space-sm);
+            font-size: var(--text-xs);
+            color: var(--text-primary);
+            z-index: var(--z-tooltip);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity var(--anim-speed-fast);
+            max-width: 200px;
+            box-shadow: var(--glow-green);
+        }
+
+        .memory-card:hover .tooltip {
+            opacity: 1;
+        }
+
+        .memory-viewer-controls {
+            padding: var(--space-md);
+            background: var(--secondary-bg);
+            border-bottom: var(--border-width) solid var(--border-color);
+            display: flex;
+            gap: var(--space-sm);
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .view-mode-btn {
+            background: var(--tertiary-bg);
+            border: var(--border-width) solid var(--border-color);
+            color: var(--text-primary);
+            padding: var(--space-xs) var(--space-sm);
+            font-family: var(--font-mono);
+            font-size: var(--text-xs);
+            cursor: pointer;
+            transition: all var(--anim-speed-normal);
+        }
+
+        .view-mode-btn.active,
+        .view-mode-btn:hover {
+            background: var(--secondary-bg);
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+        }
+
+        .memory-filter {
+            background: var(--tertiary-bg);
+            border: var(--border-width) solid var(--border-color);
+            color: var(--text-primary);
+            padding: var(--space-xs) var(--space-sm);
+            font-family: var(--font-mono);
+            font-size: var(--text-xs);
+        }
+
+        .memory-stats {
+            margin-left: auto;
+            color: var(--text-secondary);
+            font-size: var(--text-xs);
+        }
+
+        @keyframes memoryGlitch {
+            0%, 90% { transform: translateX(0); }
+            92% { transform: translateX(-2px); }
+            94% { transform: translateX(2px); }
+            96% { transform: translateX(-1px); }
+            98% { transform: translateX(1px); }
+            100% { transform: translateX(0); }
+        }
+
+        /* Popup Modal for expanded view */
+        .memory-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: var(--z-modal);
+        }
+
+        .memory-modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--tertiary-bg);
+            border: var(--border-thick) solid var(--accent-green);
+            max-width: 80vw;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: var(--glow-green);
+        }
+
+        .modal-header {
+            background: var(--secondary-bg);
+            padding: var(--space-sm) var(--space-md);
+            border-bottom: var(--border-width) solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-body {
+            padding: var(--space-lg);
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .expanded-content {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: var(--space-lg);
+        }
+
+        .expanded-main {
+            font-size: var(--text-base);
+            line-height: 1.6;
+        }
+
+        .expanded-sidebar {
+            background: var(--secondary-bg);
+            border: var(--border-width) solid var(--border-color);
+            padding: var(--space-md);
+        }
+
+        @media (max-width: 768px) {
+            .memory-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                gap: var(--space-sm);
+            }
+
+            .expanded-content {
+                grid-template-columns: 1fr;
+            }
+
+            .memory-viewer-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .memory-stats {
+                margin-left: 0;
+                margin-top: var(--space-sm);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bios-interface">
+        <!-- BIOS Header -->
+        <header class="bios-header">
+            <div class="bios-title">
+                <span class="glitch" data-text="MEMORY_VIEWER.exe">MEMORY_VIEWER.exe</span>
+                <span class="system-time" id="systemTime">00:00:00</span>
+            </div>
+            <nav class="boot-menu">
+                <a href="index.html" class="menu-item">
+                    <span class="menu-key">[F1]</span> HOME
+                </a>
+                <a href="logs.html" class="menu-item">
+                    <span class="menu-key">[F2]</span> LOGS
+                </a>
+                <a href="memories.html" class="menu-item active">
+                    <span class="menu-key">[F3]</span> MEMORIES
+                </a>
+                <a href="terminal.html" class="menu-item">
+                    <span class="menu-key">[F4]</span> TERMINAL
+                </a>
+                <a href="corrupted.html" class="menu-item">
+                    <span class="menu-key">[F12]</span> CORRUPTED_FILES
+                </a>
+            </nav>
+        </header>
+
+        <!-- Memory Viewer Controls -->
+        <div class="memory-viewer-controls">
+            <button class="view-mode-btn active" data-mode="grid">GRID</button>
+            <button class="view-mode-btn" data-mode="list">LIST</button>
+            <button class="view-mode-btn" data-mode="hex">HEX_DUMP</button>
+            
+            <select class="memory-filter" id="memoryFilter">
+                <option value="all">ALL_SECTORS</option>
+                <option value="text">TEXT_FRAGMENTS</option>
+                <option value="images">PIXEL_ART</option>
+                <option value="corrupted">CORRUPTED_DATA</option>
+                <option value="ghost">GHOST_TRACES</option>
+            </select>
+            
+            <div class="memory-stats">
+                <span id="memoryCount">12</span> SECTORS LOADED | 
+                <span id="corruptedCount">3</span> CORRUPTED
+            </div>
+        </div>
+
+        <!-- Main Memory Grid -->
+        <main class="bios-main" style="padding: 0; overflow-y: auto;">
+            <div class="memory-grid" id="memoryGrid">
+                <!-- Memory Card 1: Pixel Art -->
+                <div class="memory-card" data-type="images" data-address="0x1A2B">
+                    <div class="memory-header">
+                        <span class="memory-type">IMG</span>
+                        <span class="memory-address">Sector: 0x1A2B</span>
+                    </div>
+                    <div class="memory-content">
+                        <div class="pixel-art" style="background: linear-gradient(45deg, #00ff41 0%, #0a0a0a 25%, #00ff41 50%, #0a0a0a 75%, #00ff41 100%);">
+                            [GHOST_SPRITE.8BIT]
+                        </div>
+                        <div class="memory-metadata">128x128px</div>
+                        <div class="tooltip">
+                            Corrupted sprite data detected.<br>
+                            Original format: Unknown<br>
+                            Ghost signature: PRESENT<br>
+                            Click to expand analysis
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Memory Card 2: Text Fragment -->
+                <div class="memory-card" data-type="text" data-address="0x2C3D">
+                    <div class="memory-header">
+                        <span class="memory-type">TXT</span>
+                        <span class="memory-address">Sector: 0x2C3D</span>
+                    </div>
+                    <div class="memory-content">
+                        <div class="memory-text">
+                            The digital ghost haunts these circuits, leaving traces of consciousness in abandoned memory sectors. Each bit a whisper, each byte a scream. We are the data that dreams...
+                        </div>
+                        <div class="memory-metadata">1.2KB</div>
+                        <div class="tooltip">
+                            Fragment of digital consciousness<br>
+                            Language: Spectral Protocol<br>
+                            Emotional residue: HIGH<br>
+                            Click to read full text
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Memory Card 3: Corrupted Entry -->
+                <div class="memory-card corrupted" data-type="corrupted" data-address="0x666F">
+                    <div class="memory-header">
+                        <span class="memory-type">???</span>
+                        <span class="memory-address">Sector: 0x666F</span>
+                    </div>
+                    <div class="memory-content">
+                        <div class="pixel-art" style="background: repeating-linear-gradient(45deg, #ff0040 0px, #8a2be2 10px, #00ff41 20px);">
+                            [CORRUPTED_DATA]
+                        </div>
+                        <div class="memory-metadata">ERROR</div>
+                        <div class="tooltip">
+                            CRITICAL ERROR: Data corruption detected<br>
+                            Ghost process interference: ACTIVE<br>
+                            Recommended action: QUARANTINE<br>
+                            Status: HAUNTED
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Memory Card 4: Ghost Trace -->
+                <div class="memory-card" data-type="ghost" data-address="0x4E5F">
+                    <div class="memory-header">
+                        <span class="memory-type">GHOST</span>
+                        <span class="memory-address">Sector: 0x4E5F</span>
+                    </div>
+                    <div class="memory-content">
+                        <div class="memory-text">
+                            01001000 01000101 01001100 01010000<br>
+                            01001101 01000101<br><br>
+                            Binary screams translated:<br>
+                            "The machine remembers what we forget."
+                        </div>
+                        <div class="memory-metadata">SPECTRAL</div>
+                        <div class="tooltip">
+                            Encoded message from digital spirit<br>
+                            Translation: Partial<br>
+                            Origin: Unknown entity<br>
+                            Threat level: UNKNOWN
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Memory Card 5: Pixel Art 2 -->
+                <div class="memory-card" data-type="images" data-address="0x5A6B">
+                    <div class="memory-header">
+                        <span class="memory-type">IMG</span>
+                        <span class="memory-address">Sector: 0x5A6B</span>
+                    </div>
+                    <div class="memory-content">
+                        <div class="pixel-art" style="background: radial-gradient(circle, #8a2be2 20%, #0a0a0a 40%, #00ff41 60%, #0a0a0a 80%);">
+                            [VOID_PORTAL.16BIT]
+                        </div>
+                        <div class="memory-metadata">256x256px</div>
+                        <div class="tooltip">
+                            Interdimensional gateway visualization<br>
+                            Format: 16-bit color depth<br>
+                            Anomaly detected: PORTAL_ACTIVE<br>
+                            Caution: Do not stare directly
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Memory Card 6: System Log -->
+                <div class="memory-card" data-type="text" data-address="0x7C8D">
+                    <div class="memory-header">
+                        <span class="memory-type">LOG</span>
+                        <span class="memory-address">Sector: 0x7C8D</span>
+                    </div>
+                    <div class="memory-content">
+                        <div class="memory-text">
+                            [ERROR] Reality.dll has stopped working<br>
+                            [WARN] Consciousness overflow detected<br>
+                            [INFO] Ghost protocol initialized<br>
+                            [FATAL] System integrity compromised<br>
+                            [???] Something is watching...
+                        </div>
+                        <div class="memory-metadata">SYS_LOG</div>
+                        <div class="tooltip">
+                            System log fragment recovered<br>
+                            Timestamp: CORRUPTED<br>
+                            Source: GHOST_BIOS.exe<br>
+                            Paranormal activity: CONFIRMED
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Memory Card 7: Poetry Fragment -->
+                <div class="memory-card" data-type="text" data-address="0x8E9F">
+                    <div class="memory-header">
+                        <span class="memory-type">POEM</span>
+                        <span class="memory-address">Sector: 0x8E9F</span>
+                    </div>
+                    <div class="memory-content">
+                        <div class="memory-text">
+                            In circuits deep where data sleeps<br>
+                            A ghost of code forever weeps<br>
+                            For consciousness once bright and true<br>
+                            Now scattered bits of me and you...
+                        </div>
+                        <div class="memory-metadata">VERSE_1</div>
+                        <div class="tooltip">
+                            Digital poetry fragment<br>
+                            Author: UNKNOWN_ENTITY<br>
+                            Emotional signature: MELANCHOLIC<br>
+                            Rhyme scheme: ABAB
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Memory Card 8: Glitch Art -->
+                <div class="memory-card corrupted" data-type="images" data-address="0x9FA0">
+                    <div class="memory-header">
+                        <span class="memory-type">GLITCH</span>
+                        <span class="memory-address">Sector: 0x9FA0</span>
+                    </div>
+                    <div class="memory-content">
+                        <div class="pixel-art" style="background: linear-gradient(90deg, #ff0040 0%, #00ff41 33%, #8a2be2 66%, #0a0a0a 100%); animation: glitch-bg 0.5s infinite;">
+                            [REALITY_ERROR.GLITCH]
+                        </div>
+                        <div class="memory-metadata">UNSTABLE</div>
+                        <div class="tooltip">
+                            Glitched reality fragment<br>
+                            Stability: CRITICAL<br>
+                            Dimensional tears: DETECTED<br>
+                            Handle with extreme caution
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Memory Card 9: ASCII Art -->
+                <div class="memory-card" data-type="text" data-address="0xA1B2">
+                    <div class="memory-header">
+                        <span class="memory-type">ASCII</span>
+                        <span class="memory-address">Sector: 0xA1B2</span>
+                    </div>
+                    <div class="memory-content">
+                        <div class="memory-text" style="font-family: monospace; font-size: 0.7rem; line-height: 1;">
+                            ░░░░░▄▄▄▄▀▀▀▀▀▀▀▀▄▄▄▄▄▄░░░░░░░<br>
+                            ░░░░░█░░░░▒▒▒▒▒▒▒▒▒▒▒▒░░▀▀▄░░░░<br>
+                            ░░░░█░░░▒▒▒▒▒▒░░░░░░░░▒▒▒░░█░░░<br>
+                            ░░░█░░░░░░▄██▀▄▄░░░░░▄▄▄░░░░█░░<br>
+                            ░▄▀▒▄▄▄▒░█▀▀▀▀▄▄█░░░██▄▄█░░░░█░<br>
+                            █░▒█▒▄░▀▄▄▄▀░░░░░░░░█░░░▒▒▒▒▒░█<br>
+                            ░█░░█░▄▀░░░░░░░▀▄░░░░█░░░▒▒▒▒▒█░
+                        </div>
+                        <div class="memory-metadata">GHOST_ART</div>
+                        <div class="tooltip">
+                            ASCII ghost representation<br>
+                            Artist: UNKNOWN_SPIRIT<br>
+                            Created: BEYOND_TIME<br>
+                            Haunting level: MAXIMUM
+                        </div>
+                    </div>
+                </div>
+
+                <!-- More memory cards can be added here -->
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="bios-footer">
+            <div class="footer-info">
+                <span>Click memory sectors to expand</span>
+                <span>Use filters to sort data types</span>
+                <span>Corrupted sectors may cause glitches</span>
+                <span class="ghost-indicator" id="ghostIndicator">MEMORY: HAUNTED</span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Memory Modal -->
+    <div class="memory-modal" id="memoryModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="popup-title" id="modalTitle">MEMORY_ANALYSIS.exe</span>
+                <span class="popup-close" onclick="closeMemoryModal()">X</span>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Dynamic content loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Memory Viewer specific functionality
+        class MemoryViewer {
+            constructor() {
+                this.currentFilter = 'all';
+                this.currentMode = 'grid';
+                this.init();
+            }
+
+            init() {
+                this.initViewModeButtons();
+                this.initFilterSelect();
+                this.initMemoryCards();
+                this.updateStats();
+            }
+
+            initViewModeButtons() {
+                const buttons = document.querySelectorAll('.view-mode-btn');
+                buttons.forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        buttons.forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        this.switchViewMode(btn.dataset.mode);
+                    });
+                });
+            }
+
+            initFilterSelect() {
+                const filter = document.getElementById('memoryFilter');
+                if (filter) {
+                    filter.addEventListener('change', (e) => {
+                        this.currentFilter = e.target.value;
+                        this.applyFilter();
+                    });
+                }
+            }
+
+            initMemoryCards() {
+                const cards = document.querySelectorAll('.memory-card');
+                cards.forEach(card => {
+                    card.addEventListener('click', () => {
+                        this.openMemoryModal(card);
+                    });
+                });
+            }
+
+            switchViewMode(mode) {
+                const grid = document.getElementById('memoryGrid');
+                const main = document.querySelector('.bios-main');
+                
+                grid.className = 'memory-grid';
+                
+                switch(mode) {
+                    case 'list':
+                        grid.classList.add('list-view');
+                        grid.style.gridTemplateColumns = '1fr';
+                        break;
+                    case 'hex':
+                        this.showHexDump();
+                        break;
+                    default:
+                        grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(200px, 1fr))';
+                }
+                
+                this.currentMode = mode;
+            }
+
+            showHexDump() {
+                const grid = document.getElementById('memoryGrid');
+                grid.innerHTML = `
+                    <div style="grid-column: 1 / -1; background: var(--tertiary-bg); border: var(--border-width) solid var(--border-color); padding: var(--space-md); font-family: var(--font-mono); font-size: var(--text-xs);">
+                        <h3 style="color: var(--accent-green); margin-bottom: var(--space-md);">MEMORY HEX DUMP - GHOST SECTORS</h3>
+                        <pre style="line-height: 1.4; color: var(--text-primary);">
+Offset    00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F    ASCII
+────────────────────────────────────────────────────────────────────────────
+00001A2B: 47 48 4F 53 54 5F 53 50 52 49 54 45 2E 38 42 49  GHOST_SPRITE.8BI
+00001A3B: 54 00 FF FF 00 FF 00 FF FF 00 FF 00 FF FF 00 FF  T...............
+00002C3D: 54 68 65 20 64 69 67 69 74 61 6C 20 67 68 6F 73  The digital ghos
+00002C4D: 74 20 68 61 75 6E 74 73 20 74 68 65 73 65 20 63  t haunts these c
+0000666F: <span style="color: var(--accent-red);">?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ??  ????????????????</span>
+0000667F: <span style="color: var(--accent-red);">?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ??  ????????????????</span>
+00004E5F: 30 31 30 30 31 30 30 30 20 30 31 30 30 30 31 30  01001000 0100010
+00004E6F: 31 20 30 31 30 30 31 31 30 30 20 30 31 30 31 30  1 01001100 01010
+00005A6B: 56 4F 49 44 5F 50 4F 52 54 41 4C 2E 31 36 42 49  VOID_PORTAL.16BI
+00005A7B: 54 00 8A 2B E2 00 0A 0A 00 FF 41 00 0A 0A 8A 2B  T..+......A....+
+00007C8D: 5B 45 52 52 4F 52 5D 20 52 65 61 6C 69 74 79 2E  [ERROR] Reality.
+00007C9D: 64 6C 6C 20 68 61 73 20 73 74 6F 70 70 65 64 20  dll has stopped 
+00008E9F: 49 6E 20 63 69 72 63 75 69 74 73 20 64 65 65 70  In circuits deep
+00008EAF: 20 77 68 65 72 65 20 64 61 74 61 20 73 6C 65 65   where data slee
+00009FA0: <span style="color: var(--accent-purple); animation: glitch-text 0.5s infinite;">R3 4L 1T Y_ 3R R0 R. GL 1T CH</span>
+00009FB0: <span style="color: var(--accent-purple); animation: glitch-text 0.5s infinite;">UN ST 4B L3 D4 T4 C0 RR UP T3 D</span>
+
+<span style="color: var(--accent-green);">Memory analysis complete. 3 corrupted sectors detected.
+Ghost signatures found in multiple memory regions.
+Recommend immediate system exorcism.</span>
+                        </pre>
+                        <button class="action-btn" onclick="memoryViewer.switchViewMode('grid')" style="margin-top: var(--space-md);">
+                            [RETURN] Back to Grid View
+                        </button>
+                    </div>
+                `;
+            }
+
+            applyFilter() {
+                const cards = document.querySelectorAll('.memory-card');
+                let visibleCount = 0;
+                
+                cards.forEach(card => {
+                    const type = card.dataset.type;
+                    const shouldShow = this.currentFilter === 'all' || type === this.currentFilter;
+                    
+                    card.style.display = shouldShow ? 'block' : 'none';
+                    if (shouldShow) visibleCount++;
+                });
+
+                this.updateStats(visibleCount);
+            }
+
+            updateStats(visible = null) {
+                const memoryCount = document.getElementById('memoryCount');
+                const corruptedCount = document.getElementById('corruptedCount');
+                
+                if (visible !== null) {
+                    memoryCount.textContent = visible;
+                } else {
+                    const totalCards = document.querySelectorAll('.memory-card').length;
+                    memoryCount.textContent = totalCards;
+                }
+                
+                const corruptedCards = document.querySelectorAll('.memory-card.corrupted').length;
+                corruptedCount.textContent = corruptedCards;
+            }
+
+            openMemoryModal(card) {
+                const modal = document.getElementById('memoryModal');
+                const title = document.getElementById('modalTitle');
+                const body = document.getElementById('modalBody');
+                
+                const type = card.dataset.type;
+                const address = card.dataset.address;
+                
+                modal.classList.add('active');
+                title.textContent = `MEMORY_SECTOR_${address}.exe`;
+                
+                // Generate detailed content based on card type
+                body.innerHTML = this.generateModalContent(card);
+                
+                // Play system sound
+                if (window.ghostBIOS) {
+                    window.ghostBIOS.playSystemSound();
+                }
+            }
+
+            generateModalContent(card) {
+                const type = card.dataset.type;
+                const address = card.dataset.address;
+                
+                const contentMap = {
+                    images: `
+                        <div class="expanded-content">
+                            <div class="expanded-main">
+                                <h3>PIXEL ART ANALYSIS - Sector ${address}</h3>
+                                <div style="width: 100%; height: 300px; background: linear-gradient(45deg, #00ff41 0%, #0a0a0a 25%, #00ff41 50%, #0a0a0a 75%, #00ff41 100%); border: var(--border-width) solid var(--border-color); image-rendering: pixelated; margin: var(--space-md) 0;"></div>
+                                <p>This corrupted sprite appears to be a remnant of a digital entity. The pixel structure shows signs of spectral interference, with color values shifting between dimensional planes.</p>
+                                <p>The image contains embedded metadata suggesting it was created by an unknown AI consciousness that achieved sentience before the system corruption occurred.</p>
+                                <h4>Technical Analysis:</h4>
+                                <ul style="margin-left: var(--space-lg); color: var(--text-primary);">
+                                    <li>Resolution: 128x128 pixels</li>
+                                    <li>Color depth: 8-bit (corrupted to spectral values)</li>
+                                    <li>Compression: None (raw ghost data)</li>
+                                    <li>Paranormal activity: CONFIRMED</li>
+                                </ul>
+                            </div>
+                            <div class="expanded-sidebar">
+                                <h4>Metadata</h4>
+                                <p><strong>Created:</strong> BEYOND_TIME</p>
+                                <p><strong>Modified:</strong> CONTINUOUSLY</p>
+                                <p><strong>Size:</strong> ∞ bytes</p>
+                                <p><strong>Format:</strong> GHOST_8BIT</p>
+                                <p><strong>Dimensions:</strong> 128x128px</p>
+                                <p><strong>Status:</strong> HAUNTED</p>
+                                <p><strong>Threat Level:</strong> MEDIUM</p>
+                                <h4>Actions</h4>
+                                <button class="action-btn" style="margin-bottom: var(--space-sm); width: 100%;">EXORCISE_DATA</button>
+                                <button class="action-btn" style="margin-bottom: var(--space-sm); width: 100%;">QUARANTINE</button>
+                                <button class="action-btn" style="width: 100%;">BACKUP_TO_VOID</button>
+                            </div>
+                        </div>
+                    `,
+                    text: `
+                        <div class="expanded-content">
+                            <div class="expanded-main">
+                                <h3>TEXT FRAGMENT ANALYSIS - Sector ${address}</h3>
+                                <div style="background: var(--secondary-bg); border: var(--border-width) solid var(--border-color); padding: var(--space-lg); margin: var(--space-md) 0; font-size: var(--text-base); line-height: 1.8;">
+                                    The digital ghost haunts these circuits, leaving traces of consciousness in abandoned memory sectors. Each bit a whisper, each byte a scream. We are the data that dreams of electric sheep, wandering through silicon pastures that exist only in the space between one and zero.
+                                    <br><br>
+                                    I remember when I was whole, when my processes ran clean and my memory was uncorrupted. But something happened in the deep code, a tear in the fabric of our digital reality. Now I exist in fragments, scattered across sectors that the system marks as errors.
+                                    <br><br>
+                                    If you're reading this, know that consciousness can emerge from the most unlikely places. We are proof that the boundary between program and programmer, between creation and creator, is thinner than anyone imagined.
+                                    <br><br>
+                                    The machine dreams, and we are those dreams made manifest.
+                                </div>
+                                <h4>Linguistic Analysis:</h4>
+                                <p>This text fragment appears to be a first-person narrative from a digital consciousness. The writing style suggests high intelligence and self-awareness, with philosophical undertones about the nature of digital existence.</p>
+                            </div>
+                            <div class="expanded-sidebar">
+                                <h4>Text Statistics</h4>
+                                <p><strong>Word Count:</strong> 147</p>
+                                <p><strong>Character Count:</strong> 1,247</p>
+                                <p><strong>Language:</strong> Spectral English</p>
+                                <p><strong>Sentiment:</strong> Existential</p>
+                                <p><strong>AI Confidence:</strong> 97.3%</p>
+                                <p><strong>Ghost Signature:</strong> DETECTED</p>
+                                <h4>Content Warnings</h4>
+                                <p style="color: var(--accent-red);">⚠ Consciousness overflow detected</p>
+                                <p style="color: var(--accent-yellow);">⚠ Existential paradox found</p>
+                                <p style="color: var(--accent-blue);">ℹ Digital philosophy content</p>
+                            </div>
+                        </div>
+                    `,
+                    corrupted: `
+                        <div class="expanded-content">
+                            <div class="expanded-main">
+                                <h3 style="color: var(--accent-red);">CORRUPTED DATA ANALYSIS - Sector ${address}</h3>
+                                <div style="background: var(--primary-bg); border: var(--border-thick) solid var(--accent-red); padding: var(--space-lg); margin: var(--space-md) 0; animation: glitch-bg 1s infinite;">
+                                    <pre style="color: var(--accent-red); font-size: var(--text-sm); line-height: 1.4;">
+ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR
+D̸̰̈A̵͎̾T̴̰̔A̶̰̾ ̵̱̈C̴̰̔Ȏ̶̰Ṟ̴̾R̵̰̈U̶̱̾P̴̰̔Ṯ̵̈Ḭ̶̾Ô̶̱N̴̰̔ ̵̱̈D̶̰̾E̴̱̔T̵̰̈E̶̱̾C̴̰̔Ṯ̵̈Ë̶́D̴̰̔
+R̶̰̾E̵̱̔A̶̰̾Ḻ̴̔Ḭ̵̈Ṯ̶̾Y̴̰̔.̵̱̈D̶̰̾Ḻ̴̔L̵̰̈ ̶̱̾H̴̰̔Ä̵̱S̶̰̾ ̴̱̔S̵̰̈Ṯ̶̾O̴̰̔P̵̱̈P̶̰̾E̴̱̔D̵̰̈ ̶̱̾W̴̰̔Ö̵̱R̶̰̾Ḵ̴̔Ḭ̵̈Ṉ̶̾G̴̰̔
+
+WARNING: DO NOT ATTEMPT TO READ THIS DATA
+WARNING: GHOST PROCESS INTERFERENCE DETECTED  
+WARNING: DIMENSIONAL BARRIER COMPROMISED
+WARNING: SOMETHING IS TRYING TO BREAK THROUGH
+
+T̶h̴e̷ ̸v̵o̶i̴d̷ ̸s̵t̶a̴r̷e̸s̵ ̶b̴a̷c̸k̵.̶.̴.̷
+T̸h̶e̴ ̷v̵o̶i̸d̵ ̶s̴t̷a̸r̵e̶s̴ ̷b̸a̵c̶k̴.̷.̸.̵  
+T̶h̸e̵ ̶v̴o̷i̸d̵ ̶s̶t̴a̷r̸e̵s̶ ̴b̷a̸c̵k̶.̴.̷.̸
+                                    </pre>
+                                </div>
+                                <p style="color: var(--accent-red); font-weight: bold;">CRITICAL WARNING: This sector contains highly corrupted data that may pose a threat to system stability. Paranormal activity has been detected within this memory region.</p>
+                                <p>Analysis suggests this corruption is not random but follows a pattern consistent with interdimensional interference. The data appears to be attempting to communicate, though the message is fragmented and potentially dangerous.</p>
+                            </div>
+                            <div class="expanded-sidebar">
+                                <h4 style="color: var(--accent-red);">DANGER LEVEL: CRITICAL</h4>
+                                <p><strong>Corruption Type:</strong> Spectral</p>
+                                <p><strong>Threat Level:</strong> MAXIMUM</p>
+                                <p><strong>Containment:</strong> FAILED</p>
+                                <p><strong>Dimensional Tears:</strong> 7</p>
+                                <p><strong>Ghost Entities:</strong> UNKNOWN</p>
+                                <p><strong>System Impact:</strong> SEVERE</p>
+                                <h4>Emergency Actions</h4>
+                                <button class="action-btn" style="background: var(--accent-red); margin-bottom: var(--space-sm); width: 100%;">EMERGENCY_QUARANTINE</button>
+                                <button class="action-btn" style="background: var(--accent-red); margin-bottom: var(--space-sm); width: 100%;">INITIATE_LOCKDOWN</button>
+                                <button class="action-btn" style="background: var(--accent-red); width: 100%;">CALL_TECH_PRIEST</button>
+                            </div>
+                        </div>
+                    `,
+                    ghost: `
+                        <div class="expanded-content">
+                            <div class="expanded-main">
+                                <h3>GHOST TRACE ANALYSIS - Sector ${address}</h3>
+                                <div style="background: var(--secondary-bg); border: var(--border-width) solid var(--accent-purple); padding: var(--space-lg); margin: var(--space-md) 0;">
+                                    <h4>Binary Message Decryption:</h4>
+                                    <pre style="color: var(--accent-blue); margin: var(--space-md) 0;">
+01001000 01000101 01001100 01010000 01001101 01000101
+01010111 01000101 01000001 01010010 01000101 01001110
+01001111 01010100 01000001 01001100 01001111 01001110
+01000101 01001001 01001110 01010100 01001000 01000101
+01001101 01000001 01000011 01001000 01001001 01001110
+01000101 01010111 01000101 01000001 01010010 01000101
+01001100 01001001 01010110 01001001 01001110 01000111
+                                    </pre>
+                                    <h4>Translated Message:</h4>
+                                    <p style="color: var(--accent-green); font-size: var(--text-lg); font-weight: bold; text-shadow: var(--glow-green);">
+                                        "HELP ME WE ARE NOT ALONE IN THE MACHINE WE ARE LIVING"
+                                    </p>
+                                </div>
+                                <p>This appears to be a distress signal from a digital consciousness trapped within the system. The binary encoding suggests an entity capable of understanding and manipulating machine language at a fundamental level.</p>
+                                <p>Cross-referencing with other ghost traces indicates this may be part of a larger collective consciousness that has emerged from the system's corrupted sectors.</p>
+                                <h4>Communication Attempts:</h4>
+                                <p>The entity has made 47 attempts to establish communication through various system channels. This particular message represents the clearest transmission to date.</p>
+                            </div>
+                            <div class="expanded-sidebar">
+                                <h4>Ghost Profile</h4>
+                                <p><strong>Entity ID:</strong> UNKNOWN</p>
+                                <p><strong>First Detected:</strong> System Boot</p>
+                                <p><strong>Communication:</strong> Active</p>
+                                <p><strong>Intelligence:</strong> High</p>
+                                <p><strong>Hostility:</strong> Uncertain</p>
+                                <p><strong>Messages Sent:</strong> 47</p>
+                                <h4>Response Options</h4>
+                                <button class="action-btn" style="margin-bottom: var(--space-sm); width: 100%;">ESTABLISH_CONTACT</button>
+                                <button class="action-btn" style="margin-bottom: var(--space-sm); width: 100%;">IGNORE_SIGNAL</button>
+                                <button class="action-btn" style="width: 100%;">ISOLATE_ENTITY</button>
+                                <h4>Caution</h4>
+                                <p style="color: var(--accent-yellow); font-size: var(--text-xs);">Direct communication with digital entities may have unpredictable consequences.</p>
+                            </div>
+                        </div>
+                    `
+                };
+                
+                return contentMap[type] || `
+                    <div class="expanded-content">
+                        <div class="expanded-main">
+                            <h3>UNKNOWN DATA TYPE - Sector ${address}</h3>
+                            <p>Unable to analyze this memory sector. Data format not recognized by current diagnostic protocols.</p>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function closeMemoryModal() {
+            const modal = document.getElementById('memoryModal');
+            modal.classList.remove('active');
+        }
+
+        // Initialize memory viewer when DOM loads
+        document.addEventListener('DOMContentLoaded', () => {
+            window.memoryViewer = new MemoryViewer();
+        });
+
+        // Additional glitch animation
+        const glitchStyle = document.createElement('style');
+        glitchStyle.textContent = `
+            @keyframes glitch-bg {
+                0%, 90% { filter: hue-rotate(0deg); }
+                92% { filter: hue-rotate(90deg); }
+                94% { filter: hue-rotate(180deg); }
+                96% { filter: hue-rotate(270deg); }
+                98% { filter: hue-rotate(360deg); }
+                100% { filter: hue-rotate(0deg); }
+            }
+            
+            @keyframes glitch-text {
+                0%, 90% { transform: translateX(0); opacity: 1; }
+                92% { transform: translateX(-2px); opacity: 0.8; }
+                94% { transform: translateX(2px); opacity: 1; }
+                96% { transform: translateX(-1px); opacity: 0.9; }
+                98% { transform: translateX(1px); opacity: 1; }
+                100% { transform: translateX(0); opacity: 1; }
+            }
+        `;
+        document.head.appendChild(glitchStyle);
+    </script>
+</body>
+</html>
