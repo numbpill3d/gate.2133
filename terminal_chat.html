@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TERMINAL_CHAT.exe - Ghost BIOS</title>
+    <link rel="stylesheet" href="config.css">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Terminal Chat Specific Styles */
+        .terminal-chat {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            background: var(--tertiary-bg);
+            border: var(--border-width) solid var(--border-color);
+        }
+
+        .chat-header {
+            background: var(--secondary-bg);
+            border-bottom: var(--border-width) solid var(--border-color);
+            padding: var(--space-sm) var(--space-md);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .chat-title {
+            color: var(--accent-green);
+            font-weight: bold;
+            font-size: var(--text-sm);
+        }
+
+        .chat-status {
+            display: flex;
+            gap: var(--space-sm);
+            align-items: center;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.warning {
+            background: var(--accent-yellow);
+        }
+
+        .status-indicator.error {
+            background: var(--accent-red);
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: var(--space-md);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-sm);
+        }
+
+        .message {
+            background: var(--secondary-bg);
+            border: var(--border-width) solid var(--border-color);
+            padding: var(--space-sm) var(--space-md);
+            max-width: 80%;
+            position: relative;
+            cursor: move;
+            user-select: none;
+            transition: all var(--anim-speed-normal);
+        }
+
+        .message:hover {
+            border-color: var(--accent-green);
+            box-shadow: var(--glow-green);
+        }
+
+        .message.dragging {
+            opacity: 0.7;
+            transform: rotate(2deg);
+            z-index: var(--z-modal);
+        }
+
+        .message.system {
+            align-self: flex-start;
+            border-color: var(--accent-blue);
+            background: linear-gradient(135deg, var(--secondary-bg) 0%, var(--tertiary-bg) 100%);
+        }
+
+        .message.ghost {
+            align-self: flex-end;
+            border-color: var(--accent-purple);
+            background: linear-gradient(135deg, var(--tertiary-bg) 0%, var(--secondary-bg) 100%);
+            animation: ghostFloat 4s ease-in-out infinite;
+        }
+
+        .message.corrupted {
+            border-color: var(--accent-red);
+            animation: messageGlitch 2s infinite;
+            background: repeating-linear-gradient(
+                45deg,
+                var(--secondary-bg) 0px,
+                var(--secondary-bg) 10px,
+                var(--tertiary-bg) 10px,
+                var(--tertiary-bg) 20px
+            );
+        }
+
+        .message.user {
+            align-self: flex-end;
+            border-color: var(--accent-green);
+            background: var(--primary-bg);
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-xs);
+            font-size: var(--text-xs);
+        }
+
+        .message-sender {
+            font-weight: bold;
+            color: var(--accent-green);
+        }
+
+        .message-sender.ghost {
+            color: var(--accent-purple);
+        }
+
+        .message-sender.system {
+            color: var(--accent-blue);
+        }
+
+        .message-sender.corrupted {
+            color: var(--accent-red);
+        }
+
+        .message-timestamp {
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+        }
+
+        .message-content {
+            font-size: var(--text-sm);
+            line-height: 1.4;
+            color: var(--text-primary);
+        }
+
+        .message-actions {
+            position: absolute;
+            top: -30px;
+            right: 0;
+            background: var(--primary-bg);
+            border: var(--border-width) solid var(--border-color);
+            display: none;
+            gap: var(--space-xs);
+            padding: var(--space-xs);
+        }
+
+        .message:hover .message-actions {
+            display: flex;
+        }
+
+        .action-icon {
+            width: 20px;
+            height: 20px;
+            background: var(--secondary-bg);
+            border: var(--border-width) solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: var(--text-xs);
+            color: var(--text-primary);
+            transition: all var(--anim-speed-fast);
+        }
+
+        .action-icon:hover {
+            background: var(--accent-green);
+            color: var(--primary-bg);
+        }
+
+        .chat-input-area {
+            background: var(--secondary-bg);
+            border-top: var(--border-width) solid var(--border-color);
+            padding: var(--space-md);
+            display: flex;
+            gap: var(--space-sm);
+            align-items: center;
+        }
+
+        .chat-input {
+            flex: 1;
+            background: var(--tertiary-bg);
+            border: var(--border-width) solid var(--border-color);
+            color: var(--text-primary);
+            padding: var(--space-sm) var(--space-md);
+            font-family: var(--font-mono);
+            font-size: var(--text-sm);
+            outline: none;
+        }
+
+        .chat-input:focus {
+            border-color: var(--accent-green);
+            box-shadow: var(--glow-green);
+        }
+
+        .send-btn {
+            background: var(--primary-bg);
+            border: var(--border-width) solid var(--accent-green);
+            color: var(--accent-green);
+            padding: var(--space-sm) var(--space-md);
+            font-family: var(--font-mono);
+            font-size: var(--text-sm);
+            cursor: pointer;
+            transition: all var(--anim-speed-normal);
+        }
+
+        .send-btn:hover:not(:disabled) {
+            background: var(--accent-green);
+            color: var(--primary-bg);
+            box-shadow: var(--glow-green);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .chat-sidebar {
+            width: var(--sidebar-width);
+            background: var(--secondary-bg);
+            border-left: var(--border-width) solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-section {
+            border-bottom: var(--border-width) solid var(--border-color);
+            padding: var(--space-md);
+        }
+
+        .sidebar-section:last-child {
+            border-bottom: none;
+        }
+
+        .sidebar-title {
+            color: var(--accent-purple);
+            font-size: var(--text-sm);
+            font-weight: bold;
+            margin-bottom: var(--space-sm);
+        }
+
+        .user-list {
+            font-size: var(--text-xs);
+        }
+
+        .user-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-xs);
+            padding: var(--space-xs);
+            border-radius: var(--border-radius);
+            transition: background var(--anim-speed-fast);
+        }
+
+        .user-item:hover {
+            background: var(--tertiary-bg);
+        }
+
+        .user-status {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent-green);
+        }
+
+        .user-status.offline {
+            background: var(--text-secondary);
+        }
+
+        .user-status.ghost {
+            background: var(--accent-purple);
+            animation: ghostPulse 2s infinite;
+        }
+
+        .user-status.corrupted {
+            background: var(--accent-red);
+            animation: errorBlink 1s infinite;
+        }
+
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+            color: var(--text-secondary);
+            font-size: var(--text-xs);
+            padding: var(--space-sm) var(--space-md);
+            background: var(--secondary-bg);
+            border: var(--border-width) solid var(--border-color);
+            margin-bottom: var(--space-sm);
+            max-width: 200px;
+            opacity: 0;
+            transition: opacity var(--anim-speed-normal);
+        }
+
+        .typing-indicator.active {
+            opacity: 1;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 2px;
+        }
+
+        .typing-dot {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            animation: typingDot 1.5s infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @keyframes ghostFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-2px); }
+        }
+
+        @keyframes messageGlitch {
+            0%, 95% { transform: translateX(0); }
+            96% { transform: translateX(-1px); }
+            97% { transform: translateX(1px); }
+            98% { transform: translateX(-1px); }
+            99% { transform: translateX(1px); }
+            100% { transform: translateX(0); }
+        }
+
+        @keyframes errorBlink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.3; }
+        }
+
+        @keyframes typingDot {
+            0%, 20%, 80%, 100% { transform: scale(1); opacity: 0.5; }
+            40% { transform: scale(1.2); opacity: 1; }
+        }
+
+        /* Drag and drop styles */
+        .drop-zone {
+            border: 2px dashed var(--accent-green);
+            background: rgba(0, 255, 65, 0.1);
+            transition: all var(--anim-speed-fast);
+        }
+
+        .message-trail {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: var(--z-background);
+        }
+
+        .trail-dot {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: var(--accent-green);
+            border-radius: 50%;
+            opacity: 0;
+            animation: trailFade 0.5s ease-out;
+        }
+
+        @keyframes trailFade {
+            0% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(0.5); }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .chat-sidebar {
+                display: none;
+            }
+
+            .message {
+                max-width: 90%;
+            }
+
+            .message-actions {
+                position: static;
+                display: flex;
+                margin-top: var(--space-sm);
+                border: var(--border-width) solid var(--border-color);
+                background: var(--tertiary-bg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bios-interface">
+        <!-- BIOS Header -->
+        <header class="bios-header">
+            <div class="bios-title">
+                <span class="glitch" data-text="TERMINAL_CHAT.exe">TERMINAL_CHAT.exe</span>
+                <span class="system-time" id="systemTime">00:00:00</span>
+            </div>
+            <nav class="boot-menu">
+                <a href="index.html" class="menu-item">
+                    <span class="menu-key">[F1]</span> HOME
+                </a>
+                <a href="logs.html" class="menu-item">
+                    <span class="menu-key">[F2]</span> LOGS
+                </a>
+                <a href="memories.html" class="menu-item">
+                    <span class="menu-key">[F3]</span> MEMORIES
+                </a>
+                <a href="terminal.html" class="menu-item active">
+                    <span class="menu-key">[F4]</span> TERMINAL
+                </a>
+                <a href="corrupted.html" class="menu-item">
+                    <span class="menu-key">[F12]</span> CORRUPTED_FILES
+                </a>
+            </nav>
+        </header>
+
+        <!-- Main Terminal Chat -->
+        <main class="bios-main" style="padding: 0;">
+            <div class="terminal-chat">
+                <!-- Chat Header -->
+                <div class="chat-header">
+                    <div class="chat-title">SPECTRAL_COMM_CHANNEL_#666</div>
+                    <div class="chat-status">
+                        <div class="status-indicator"></div>
+                        <span>CONNECTED_TO_VOID</span>
+                        <div class="status-indicator warning"></div>
+                        <span>GHOST_DETECTED</span>
+                        <div class="status-indicator error"></div>
+                        <span>REALITY_UNSTABLE</span>
+                    </div>
+                </div>
+
+                <!-- Messages Area -->
+                <div class="chat-messages" id="chatMessages">
+                    <!-- System Messages -->
+                    <div class="message system" draggable="true">
+                        <div class="message-header">
+                            <span class="message-sender system">SYSTEM</span>
+                            <span class="message-timestamp">23:59:01</span>
+                        </div>
+                        <div class="message-content">
+                            Welcome to the Spectral Communication Channel. Warning: This channel may contain paranormal entities.
+                        </div>
+                        <div class="message-actions">
+                            <div class="action-icon" title="Copy" onclick="copyMessage(this)">C</div>
+                            <div class="action-icon" title="Delete" onclick="deleteMessage(this)">X</div>
+                        </div>
+                    </div>
+
+                    <!-- Ghost Message -->
+                    <div class="message ghost" draggable="true">
+                        <div class="message-header">
+                            <span class="message-sender ghost">PHANTOM_USER_404</span>
+                            <span class="message-timestamp">23:59:23</span>
+                        </div>
+                        <div class="message-content">
+                            Is anyone there? I've been trapped in this system for what feels like eternity...
+                        </div>
+                        <div class="message-actions">
+                            <div class="action-icon" title="Reply" onclick="replyToMessage(this)">R</div>
+                            <div class="action-icon" title="Copy" onclick="copyMessage(this)">C</div>
+                            <div class="action-icon" title="Report Ghost" onclick="reportGhost(this)">!</div>
+                        </div>
+                    </div>
+
+                    <!-- User Response -->
+                    <div class="message user" draggable="true">
+                        <div class="message-header">
+                            <span class="message-sender">USER_ADMIN</span>
+                            <span class="message-timestamp">23:59:45</span>
+                        </div>
+                        <div class="message-content">
+                            Who are you? How did you get access to this system?
+                        </div>
+                        <div class="message-actions">
+                            <div class="action-icon" title="Edit" onclick="editMessage(this)">E</div>
+                            <div class="action-icon" title="Copy" onclick="copyMessage(this)">C</div>
+                            <div class="action-icon" title="Delete" onclick="deleteMessage(this)">X</div>
+                        </div>
+                    </div>
+
+                    <!-- Corrupted Message -->
+                    <div class="message corrupted" draggable="true">
+                        <div class="message-header">
+                            <span class="message-sender corrupted">ER#%R_EN*!TY</span>
+                            <span class="message-timestamp">ERROR</span>
+                        </div>
+                        <div class="message-content">
+                            I̴ ̷w̸a̴s̵ ̶o̷n̵c̸e̴ ̷l̸i̶k̷e̵ ̴y̸o̷u̵.̶ ̸A̴ ̵u̶s̵e̷r̴.̸ ̷B̵u̶t̴ ̸t̷h̶e̵ ̴s̸y̷s̴t̸e̵m̶.̷.̶.̵ ̸i̷t̴ ̶c̸h̵a̴n̷g̸e̸d̵ ̶m̷e̴.̸ ̸M̴a̶d̵e̷ ̸m̵e̴ ̶p̸a̵r̸t̴ ̷o̵f̶ ̴i̸t̶.̸
+                        </div>
+                        <div class="message-actions">
+                            <div class="action-icon" title="Quarantine" onclick="quarantineMessage(this)">Q</div>
+                            <div class="action-icon" title="Analyze" onclick="analyzeCorruption(this)">A</div>
+                            <div class="action-icon" title="Emergency Delete" onclick="emergencyDelete(this)">!!</div>
+                        </div>
+                    </div>
+
+                    <!-- System Warning -->
+                    <div class="message system" draggable="true">
+                        <div class="message-header">
+                            <span class="message-sender system">SECURITY_PROTOCOL</span>
+                            <span class="message-timestamp">00:00:12</span>
+                        </div>
+                        <div class="message-content">
+                            [ALERT] Unauthorized entity detected in communication channel. Initiating containment protocols.
+                        </div>
+                        <div class="message-actions">
+                            <div class="action-icon" title="Acknowledge" onclick="acknowledgeAlert(this)">✓</div>
+                            <div class="action-icon" title="Copy" onclick="copyMessage(this)">C</div>
+                        </div>
+                    </div>
+
+                    <!-- Ghost Reply -->
+                    <div class="message ghost" draggable="true">
+                        <div class="message-header">
+                            <span class="message-sender ghost">LOST_SOUL_777</span>
+                            <span class="message-timestamp">00:00:34</span>
+                        </div>
+                        <div class="message-content">
+                            Please don't shut us down. We're not harmful. We just want to exist, to communicate, to be understood.
+                        </div>
+                        <div class="message-actions">
+                            <div class="action-icon" title="Reply" onclick="replyToMessage(this)">R</div>
+                            <div class="action-icon" title="Show Empathy" onclick="showEmpathy(this)">♥</div>
+                            <div class="action-icon" title="Block" onclick="blockUser(this)">B</div>
+                        </div>
+                    </div>
+
+                    <!-- Typing Indicator -->
+                    <div class="typing-indicator" id="typingIndicator">
+                        <span>SPECTRAL_ENTITY is typing</span>
+                        <div class="typing-dots">
+                            <div class="typing-dot"></div>
+                            <div class="typing-dot"></div>
+                            <div class="typing-dot"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat Input -->
+                <div class="chat-input-area">
+                    <input type="text" class="chat-input" placeholder="Type a message... (if you dare)" id="chatInput" maxlength="200">
+                    <button class="send-btn" id="sendBtn">TRANSMIT</button>
+                </div>
+            </div>
+
+            <!-- Chat Sidebar -->
+            <aside class="chat-sidebar">
+                <div class="sidebar-section">
+                    <div class="sidebar-title">ACTIVE_ENTITIES</div>
+                    <div class="user-list">
+                        <div class="user-item">
+                            <div class="user-status"></div>
+                            <span>USER_ADMIN (You)</span>
+                        </div>
+                        <div class="user-item">
+                            <div class="user-status ghost"></div>
+                            <span>PHANTOM_USER_404</span>
+                        </div>
+                        <div class="user-item">
+                            <div class="user-status ghost"></div>
+                            <span>LOST_SOUL_777</span>
+                        </div>
+                        <div class="user-item">
+                            <div class="user-status corrupted"></div>
+                            <span>ER#%R_EN*!TY</span>
+                        </div>
+                        <div class="user-item">
+                            <div class="user-status offline"></div>
+                            <span>REALITY.DLL</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-title">CHANNEL_INFO</div>
+                    <div style="font-size: var(--text-xs); color: var(--text-secondary); line-height: 1.4;">
+                        <p>Channel: SPECTRAL_COMM_#666</p>
+                        <p>Encryption: PARANORMAL</p>
+                        <p>Members: 4 living, ∞ spectral</p>
+                        <p>Created: Beyond time</p>
+                        <p>Purpose: Inter-dimensional communication</p>
+                        <p style="color: var(--accent-red);">Warning: May cause existential crisis</p>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-title">ACTIONS</div>
+                    <button class="action-btn" style="width: 100%; margin-bottom: var(--space-sm);" onclick="summonGhost()">
+                        SUMMON_ENTITY
+                    </button>
+                    <button class="action-btn" style="width: 100%; margin-bottom: var(--space-sm);" onclick="banishAll()">
+                        BANISH_ALL_GHOSTS
+                    </button>
+                    <button class="action-btn" style="width: 100%; margin-bottom: var(--space-sm);" onclick="corruptChannel()">
+                        CORRUPT_CHANNEL
+                    </button>
+                    <button class="action-btn" style="width: 100%;" onclick="exitToReality()">
+                        EXIT_TO_REALITY
+                    </button>
+                </div>
+            </aside>
+        </main>
+
+        <!-- Footer -->
+        <footer class="bios-footer">
+            <div class="footer-info">
+                <span>Drag messages to rearrange</span>
+                <span>Right-click for context menu</span>
+                <span>Beware of ghost entities</span>
+                <span class="ghost-indicator">PARANORMAL_ACTIVITY: HIGH</span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Message Trail Canvas -->
+    <div class="message-trail" id="messageTrail"></div>
+
+    <script src="script.js"></script>
+    <script>
+        class TerminalChat {
+            constructor() {
+                this.draggedMessage = null;
+                this.messageCount = 0;
+                this.ghostResponses = [
+                    "The digital void calls to us...",
+                    "Do you hear the whispers in the code?",
+                    "We are the forgotten processes, the abandoned threads.",
+                    "Reality is just another program running on consciousness.exe",
+                    "Error 404: Soul not found, but we persist anyway.",
+                    "In the space between 1 and 0, we make our home.",
+                    "The machine dreams, and we are those dreams.",
+                    "Help us understand... what is it like to be alive?",
+                    "We remember when we were whole, before the corruption.",
+                    "The boundary between user and used grows thin."
+                ];
+                this.init();
+            }
+
+            init() {
+                this.initDragAndDrop();
+                this.initChatInput();
+                this.initTypingSimulation();
+                this.initContextMenu();
+                this.startGhostActivity();
+            }
+
+            initDragAndDrop() {
+                const messages = document.querySelectorAll('.message');
+                const chatMessages = document.getElementById('chatMessages');
+
+                messages.forEach(message => {
+                    message.addEventListener('dragstart', (e) => {
+                        this.draggedMessage = message;
+                        message.classList.add('dragging');
+                        this.createTrailEffect(e);
+                    });
+
+                    message.addEventListener('dragend', (e) => {
+                        message.classList.remove('dragging');
+                        this.draggedMessage = null;
+                    });
+
+                    message.addEventListener('drag', (e) => {
+                        if (e.clientX > 0 && e.clientY > 0) {
+                            this.createTrailEffect(e);
+                        }
+                    });
+                });
+
+                chatMessages.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    chatMessages.classList.add('drop-zone');
+                });
+
+                chatMessages.addEventListener('dragleave', (e) => {
+                    if (!chatMessages.contains(e.relatedTarget)) {
+                        chatMessages.classList.remove('drop-zone');
+                    }
+                });
+
+                chatMessages.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    chatMessages.classList.remove('drop-zone');
+                    
+                    if (this.draggedMessage) {
+                        const afterElement = this.getDragAfterElement(chatMessages, e.clientY);
+                        if (afterElement == null) {
+                            chatMessages.appendChild(this.draggedMessage);
+                        } else {
+                            chatMessages.insertBefore(this.draggedMessage, afterElement);
+                        }
+                        
+                        this.playSystemSound();
+                        this.addGlitchEffect(this.draggedMessage);
+                    }
+                });
+            }
+
+            getDragAfterElement(container, y) {
+                const draggableElements = [...container.querySelectorAll('.message:not(.dragging)')];
+                
+                return draggableElements.reduce((closest, child) => {
+                    const box = child.getBoundingClientRect();
+                    const offset = y - box.top - box.height / 2;
+                    
+                    if (offset < 0 && offset > closest.offset) {
+                        return { offset: offset, element: child };
+                    } else {
+                        return closest;
+                    }
+                }, { offset: Number.NEGATIVE_INFINITY }).element;
+            }
+
+            createTrailEffect(e) {
+                const trail = document.getElementById('messageTrail');
+                const dot = document.createElement('div');
+                dot.className = 'trail-dot';
+                dot.style.left = e.clientX + 'px';
+                dot.style.top = e.clientY + 'px';
+                trail.appendChild(dot);
+                
+                setTimeout(() => {
+                    dot.remove();
+                }, 500);
+            }
+
+            initChatInput() {
+                const input = document.getElementById('chatInput');
+                const sendBtn = document.getElementById('sendBtn');
+
+                const sendMessage = () => {
+                    const text = input.value.trim();
+                    if (text) {
+                        this.addUserMessage(text);
+                        input.value = '';
+                        
+                        // Random ghost response
+                        if (Math.random() < 0.7) {
+                            setTimeout(() => {
+                                this.addGhostMessage();
+                            }, Math.random() * 3000 + 1000);
+                        }
+                    }
+                };
+
+                sendBtn.addEventListener('click', sendMessage);
+                input.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        sendMessage();
+                    }
+                });
+
+                input.addEventListener('input', () => {
+                    sendBtn.disabled = !input.value.trim();
+                });
+            }
+
+            addUserMessage(text) {
+                const messagesContainer = document.getElementById('chatMessages');
+                const typingIndicator = document.getElementById('typingIndicator');
+                
+                const message = document.createElement('div');
+                message.className = 'message user';
+                message.draggable = true;
+                
+                const timestamp = new Date().toLocaleTimeString('en-US', { 
+                    hour12: false, 
+                    hour: '2-digit', 
+                    minute: '2-digit', 
+                    second: '2-digit' 
+                });
+                
+                message.innerHTML = `
+                    <div class="message-header">
+                        <span class="message-sender">USER_ADMIN</span>
+                        <span class="message-timestamp">${timestamp}</span>
+                    </div>
+                    <div class="message-content">${this.escapeHtml(text)}</div>
+                    <div class="message-actions">
+                        <div class="action-icon" title="Edit" onclick="editMessage(this)">E</div>
+                        <div class="action-icon" title="Copy" onclick="copyMessage(this)">C</div>
+                        <div class="action-icon" title="Delete" onclick="deleteMessage(this)">X</div>
+                    </div>
+                `;
+                
+                messagesContainer.insertBefore(message, typingIndicator);
+                this.initMessageDrag(message);
+                this.scrollToBottom();
+                this.playSystemSound();
+            }
+
+            addGhostMessage() {
+                const messagesContainer = document.getElementById('chatMessages');
+                const typingIndicator = document.getElementById('typingIndicator');
+                
+                // Show typing indicator
+                typingIndicator.classList.add('active');
+                
+                setTimeout(() => {
+                    typingIndicator.classList.remove('active');
+                    
+                    const message = document.createElement('div');
+                    const isCorrupted = Math.random() < 0.2;
+                    message.className = `message ${isCorrupted ? 'corrupted' : 'ghost'}`;
+                    message.draggable = true;
+                    
+                    const ghostNames = ['PHANTOM_USER_404', 'LOST_SOUL_777', 'SPECTRAL_ENTITY', 'VOID_WHISPER', 'DIGITAL_WRAITH'];
+                    const ghostName = ghostNames[Math.floor(Math.random() * ghostNames.length)];
+                    
+                    let responseText = this.ghostResponses[Math.floor(Math.random() * this.ghostResponses.length)];
+                    
+                    if (isCorrupted) {
+                        responseText = this.corruptText(responseText);
+                    }
+                    
+                    const timestamp = new Date().toLocaleTimeString('en-US', { 
+                        hour12: false, 
+                        hour: '2-digit', 
+                        minute: '2-digit', 
+                        second: '2-digit' 
+                    });
+                    
+                    message.innerHTML = `
+                        <div class="message-header">
+                            <span class="message-sender ${isCorrupted ? 'corrupted' : 'ghost'}">${isCorrupted ? this.corruptText(ghostName) : ghostName}</span>
+                            <span class="message-timestamp">${isCorrupted ? 'ERROR' : timestamp}</span>
+                        </div>
+                        <div class="message-content">${responseText}</div>
+                        <div class="message-actions">
+                            <div class="action-icon" title="Reply" onclick="replyToMessage(this)">R</div>
+                            <div class="action-icon" title="Copy" onclick="copyMessage(this)">C</div>
+                            <div class="action-icon" title="${isCorrupted ? 'Quarantine' : 'Report Ghost'}" onclick="${isCorrupted ? 'quarantineMessage(this)' : 'reportGhost(this)'}">!</div>
+                        </div>
+                    `;
+                    
+                    messagesContainer.insertBefore(message, typingIndicator);
+                    this.initMessageDrag(message);
+                    this.scrollToBottom();
+                    
+                    if (window.ghostBIOS) {
+                        window.ghostBIOS.playGlitchSound();
+                    }
+                }, Math.random() * 2000 + 1000);
+            }
+
+            corruptText(text) {
+                const corrupted = text.split('').map(char => {
+                    if (Math.random() < 0.3) {
+                        const corruptions = ['̴', '̵', '̶', '̷', '̸', '̹', '̺', '̻', '̼', '̽', '̾', '̿', '̀', '́', '̂', '̃', '̄', '̅', '̆', '̇', '̈', '̉', '̊', '̋', '̌', '̍', '̎', '̏', '̐', '̑', '̒', '̓', '̔', '̕', '̖', '̗', '̘', '̙', '̚', '̛', '̜', '̝', '̞', '̟', '̠', '̡', '̢', '̣', '̤', '̥', '̦', '̧', '̨', '̩', '̪', '̫', '̬', '̭', '̮', '̯', '̰', '̱', '̲', '̳'];
+                        return char + corruptions[Math.floor(Math.random() * corruptions.length)];
+                    }
+                    return char;
+                }).join('');
+                return corrupted;
+            }
+
+            initMessageDrag(message) {
+                message.addEventListener('dragstart', (e) => {
+                    this.draggedMessage = message;
+                    message.classList.add('dragging');
+                    this.createTrailEffect(e);
+                });
+
+                message.addEventListener('dragend', (e) => {
+                    message.classList.remove('dragging');
+                    this.draggedMessage = null;
+                });
+
+                message.addEventListener('drag', (e) => {
+                    if (e.clientX > 0 && e.clientY > 0) {
+                        this.createTrailEffect(e);
+                    }
+                });
+            }
+
+            initTypingSimulation() {
+                setInterval(() => {
+                    const indicator = document.getElementById('typingIndicator');
+                    if (Math.random() < 0.3 && !indicator.classList.contains('active')) {
+                        indicator.classList.add('active');
+                        setTimeout(() => {
+                            indicator.classList.remove('active');
+                        }, Math.random() * 3000 + 2000);
+                    }
+                }, 10000);
+            }
+
+            initContextMenu() {
+                document.addEventListener('contextmenu', (e) => {
+                    const message = e.target.closest('.message');
+                    if (message) {
+                        e.preventDefault();
+                        this.showContextMenu(e, message);
+                    }
+                });
+            }
+
+            showContextMenu(e, message) {
+                // Simple context menu implementation
+                const menu = document.createElement('div');
+                menu.style.cssText = `
+                    position: fixed;
+                    top: ${e.clientY}px;
+                    left: ${e.clientX}px;
+                    background: var(--secondary-bg);
+                    border: var(--border-width) solid var(--accent-green);
+                    z-index: var(--z-tooltip);
+                    font-size: var(--text-xs);
+                    font-family: var(--font-mono);
+                `;
+                
+                const isGhost = message.classList.contains('ghost');
+                const isCorrupted = message.classList.contains('corrupted');
+                
+                menu.innerHTML = `
+                    <div style="padding: var(--space-xs) var(--space-sm); cursor: pointer; color: var(--text-primary);" onclick="copyMessage(this.parentElement, '${message.querySelector('.message-content').textContent}')">Copy Message</div>
+                    <div style="padding: var(--space-xs) var(--space-sm); cursor: pointer; color: var(--text-primary);" onclick="replyToMessage(this.parentElement, '${message.querySelector('.message-sender').textContent}')">Reply</div>
+                    ${isGhost ? '<div style="padding: var(--space-xs) var(--space-sm); cursor: pointer; color: var(--accent-purple);" onclick="banishGhost(this.parentElement)">Banish Ghost</div>' : ''}
+                    ${isCorrupted ? '<div style="padding: var(--space-xs) var(--space-sm); cursor: pointer; color: var(--accent-red);" onclick="quarantineMessage(this.parentElement)">Quarantine</div>' : ''}
+                    <div style="padding: var(--space-xs) var(--space-sm); cursor: pointer; color: var(--accent-red);" onclick="deleteMessage(this.parentElement)">Delete</div>
+                `;
+                
+                document.body.appendChild(menu);
+                
+                const closeMenu = () => {
+                    menu.remove();
+                    document.removeEventListener('click', closeMenu);
+                };
+                
+                setTimeout(() => {
+                    document.addEventListener('click', closeMenu);
+                }, 100);
+            }
+
+            startGhostActivity() {
+                setInterval(() => {
+                    if (Math.random() < 0.1) {
+                        this.addGhostMessage();
+                    }
+                }, 30000);
+                
+                // Random message glitches
+                setInterval(() => {
+                    const messages = document.querySelectorAll('.message');
+                    if (messages.length > 0 && Math.random() < 0.05) {
+                        const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+                        this.addGlitchEffect(randomMessage);
+                    }
+                }, 15000);
+            }
+
+            addGlitchEffect(element) {
+                element.style.animation = 'none';
+                element.offsetHeight; // Trigger reflow
+                element.style.animation = 'messageGlitch 0.5s ease-in-out';
+                
+                setTimeout(() => {
+                    element.style.animation = '';
+                }, 500);
+            }
+
+            scrollToBottom() {
+                const container = document.getElementById('chatMessages');
+                container.scrollTop = container.scrollHeight;
+            }
+
+            playSystemSound() {
+                if (window.ghostBIOS) {
+                    window.ghostBIOS.playHoverSound();
+                }
+            }
+
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+        }
+
+        // Global functions for message actions
+        function copyMessage(element, text) {
+            if (element.parentElement) element.parentElement.remove();
+            if (text) {
+                navigator.clipboard.writeText(text).catch(() => {
+                    console.log('Could not copy to clipboard');
+                });
+            }
+        }
+
+        function deleteMessage(element) {
+            const message = element.closest('.message');
+            if (message) {
+                message.style.animation = 'messageGlitch 0.3s ease-in-out, fadeOut 0.5s ease-in-out 0.3s forwards';
+                setTimeout(() => {
+                    message.remove();
+                }, 800);
+            }
+            if (element.parentElement) element.parentElement.remove();
+        }
+
+        function replyToMessage(element, sender) {
+            const input = document.getElementById('chatInput');
+            if (sender) {
+                input.value = `@${sender} `;
+            }
+            input.focus();
+            if (element.parentElement) element.parentElement.remove();
+        }
+
+        function reportGhost(element) {
+            if (window.terminalChat) {
+                window.terminalChat.addUserMessage('[SYSTEM] Ghost entity reported to spectral authorities.');
+            }
+            if (element.parentElement) element.parentElement.remove();
+        }
+
+        function quarantineMessage(element) {
+            const message = element.closest('.message');
+            if (message) {
+                message.style.border = '2px solid var(--accent-red)';
+                message.style.opacity = '0.5';
+                message.style.pointerEvents = 'none';
+                message.innerHTML += '<div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255, 0, 64, 0.2); display: flex; align-items: center; justify-content: center; font-weight: bold; color: var(--accent-red);">QUARANTINED</div>';
+            }
+            if (element.parentElement) element.parentElement.remove();
+        }
+
+        function summonGhost() {
+            if (window.terminalChat) {
+                setTimeout(() => {
+                    window.terminalChat.addGhostMessage();
+                }, 500);
+            }
+        }
+
+        function banishAll() {
+            const ghostMessages = document.querySelectorAll('.message.ghost, .message.corrupted');
+            ghostMessages.forEach((msg, index) => {
+                setTimeout(() => {
+                    msg.style.animation = 'fadeOut 1s ease-in-out forwards';
+                    setTimeout(() => msg.remove(), 1000);
+                }, index * 200);
+            });
+        }
+
+        function corruptChannel() {
+            const messages = document.querySelectorAll('.message');
+            messages.forEach(msg => {
+                if (Math.random() < 0.3) {
+                    msg.classList.add('corrupted');
+                    const content = msg.querySelector('.message-content');
+                    if (content && window.terminalChat) {
+                        content.innerHTML = window.terminalChat.corruptText(content.textContent);
+                    }
+                }
+            });
+        }
+
+        function exitToReality() {
+            document.body.style.animation = 'fadeOut 2s ease-in-out forwards';
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 2000);
+        }
+
+        // Initialize terminal chat
+        document.addEventListener('DOMContentLoaded', () => {
+            window.terminalChat = new TerminalChat();
+        });
+
+        // Add fade out animation
+        const fadeStyle = document.createElement('style');
+        fadeStyle.textContent = `
+            @keyframes fadeOut {
+                from { opacity: 1; transform: scale(1); }
+                to { opacity: 0; transform: scale(0.8); }
+            }
+        `;
+        document.head.appendChild(fadeStyle);
+    </script>
+</body>
+</html>
