@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORRUPTED_FILES.exe - Ghost BIOS</title>
+    <link rel="stylesheet" href="config.css">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Corrupted Files Specific Styles */
+        .file-explorer {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            background: var(--tertiary-bg);
+            border: var(--border-width) solid var(--border-color);
+        }
+
+        .explorer-toolbar {
+            background: var(--secondary-bg);
+            border-bottom: var(--border-width) solid var(--border-color);
+            padding: var(--space-sm) var(--space-md);
+            display: flex;
+            gap: var(--space-sm);
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .path-bar {
+            background: var(--tertiary-bg);
+            border: var(--border-width) solid var(--border-color);
+            color: var(--text-primary);
+            padding: var(--space-xs) var(--space-sm);
+            font-family: var(--font-mono);
+            font-size: var(--text-sm);
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .view-mode-toggle {
+            display: flex;
+            gap: 0;
+        }
+
+        .view-btn {
+            background: var(--tertiary-bg);
+            border: var(--border-width) solid var(--border-color);
+            color: var(--text-primary);
+            padding: var(--space-xs) var(--space-sm);
+            font-family: var(--font-mono);
+            font-size: var(--text-xs);
+            cursor: pointer;
+            transition: all var(--anim-speed-normal);
+        }
+
+        .view-btn:first-child {
+            border-right: none;
+        }
+
+        .view-btn.active {
+            background: var(--accent-red);
+            color: var(--primary-bg);
+            box-shadow: var(--glow-red);
+        }
+
+        .explorer-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .file-list {
+            flex: 1;
+            padding: var(--space-md);
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: var(--space-md);
+            align-content: start;
+        }
+
+        .file-list.list-view {
+            grid-template-columns: 1fr;
+            gap: var(--space-xs);
+        }
+
+        .file-item {
+            background: var(--secondary-bg);
+            border: var(--border-width) solid var(--border-color);
+            padding: var(--space-sm);
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--anim-speed-normal);
+            position: relative;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .file-item.list-view {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            text-align: left;
+            padding: var(--space-xs) var(--space-sm);
+        }
+
+        .file-item:hover {
+            border-color: var(--accent-red);
+            box-shadow: var(--glow-red);
+        }
+
+        .file-item.corrupted {
+            animation: fileGlitch 3s infinite;
+            background: repeating-linear-gradient(
+                45deg,
+                var(--secondary-bg) 0px,
+                var(--secondary-bg) 10px,
+                var(--tertiary-bg) 10px,
+                var(--tertiary-bg) 20px
+            );
+        }
+
+        .file-item.haunted {
+            border-color: var(--accent-purple);
+            animation: ghostFloat 4s ease-in-out infinite;
+        }
+
+        .file-item.broken {
+            opacity: 0.6;
+            filter: grayscale(0.7);
+        }
+
+        .file-icon {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto var(--space-sm) auto;
+            background: var(--accent-red);
+            border: var(--border-width) solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: var(--text-lg);
+            color: var(--text-bright);
+            position: relative;
+        }
+
+        .file-item.list-view .file-icon {
+            width: 24px;
+            height: 24px;
+            margin: 0;
+            font-size: var(--text-sm);
+            flex-shrink: 0;
+        }
+
+        .file-icon.exe {
+            background: var(--accent-red);
+        }
+
+        .file-icon.dll {
+            background: var(--accent-purple);
+        }
+
+        .file-icon.sys {
+            background: var(--accent-blue);
+        }
+
+        .file-icon.corrupted {
+            background: repeating-linear-gradient(
+                45deg,
+                var(--accent-red) 0px,
+                var(--accent-red) 5px,
+                var(--primary-bg) 5px,
+                var(--primary-bg) 10px
+            );
+            animation: iconGlitch 1s infinite;
+        }
+
+        .file-name {
+            font-size: var(--text-xs);
+            color: var(--text-primary);
+            word-break: break-all;
+            line-height: 1.2;
+        }
+
+        .file-item.list-view .file-name {
+            flex: 1;
+            word-break: normal;
+        }
+
+        .file-size {
+            font-size: var(--text-xs);
+            color: var(--text-secondary);
+            margin-top: var(--space-xs);
+        }
+
+        .file-item.list-view .file-size {
+            margin-top: 0;
+            min-width: 80px;
+            text-align: right;
+        }
+
+        .file-status {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-red);
+        }
+
+        .file-status.haunted {
+            background: var(--accent-purple);
+            animation: ghostPulse 2s infinite;
+        }
+
+        .file-status.broken {
+            background: var(--text-secondary);
+        }
+
+        .file-item.list-view .file-status {
+            position: static;
+            margin-left: auto;
+        }
+
+        .file-details {
+            width: 300px;
+            background: var(--secondary-bg);
+            border-left: var(--border-width) solid var(--border-color);
+            padding: var(--space-md);
+            overflow-y: auto;
+            display: none;
+        }
+
+        .file-details.active {
+            display: block;
+        }
+
+        .details-title {
+            color: var(--accent-red);
+            font-size: var(--text-base);
+            font-weight: bold;
+            margin-bottom: var(--space-md);
+            border-bottom: var(--border-width) solid var(--border-color);
+            padding-bottom: var(--space-sm);
+        }
+
+        .details-section {
+            margin-bottom: var(--space-lg);
+        }
+
+        .details-section h4 {
+            color: var(--accent-green);
+            font-size: var(--text-sm);
+            margin-bottom: var(--space-sm);
+        }
+
+        .details-property {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: var(--space-xs);
+            font-size: var(--text-xs);
+        }
+
+        .details-property .label {
+            color: var(--text-secondary);
+        }
+
+        .details-property .value {
+            color: var(--text-primary);
+        }
+
+        .corruption-indicator {
+            background: var(--tertiary-bg);
+            border: var(--border-width) solid var(--accent-red);
+            padding: var(--space-sm);
+            margin: var(--space-md) 0;
+            font-size: var(--text-xs);
+        }
+
+        .corruption-level {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-sm);
+        }
+
+        .corruption-bar {
+            flex: 1;
+            height: 6px;
+            background: var(--tertiary-bg);
+            border: var(--border-width) solid var(--border-color);
+            position: relative;
+        }
+
+        .corruption-fill {
+            height: 100%;
+            background: var(--accent-red);
+            transition: width var(--anim-speed-normal);
+        }
+
+        .file-actions {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-sm);
+        }
+
+        .action-btn.dangerous {
+            background: var(--accent-red);
+            color: var(--text-bright);
+            border-color: var(--accent-red);
+        }
+
+        .action-btn.dangerous:hover {
+            background: var(--primary-bg);
+            color: var(--accent-red);
+        }
+
+        .error-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--primary-bg);
+            border: var(--border-thick) solid var(--accent-red);
+            padding: var(--space-lg);
+            z-index: var(--z-modal);
+            max-width: 400px;
+            display: none;
+            box-shadow: var(--glow-red);
+            animation: errorShake 0.5s ease-in-out;
+        }
+
+        .error-popup.active {
+            display: block;
+        }
+
+        .error-title {
+            color: var(--accent-red);
+            font-weight: bold;
+            margin-bottom: var(--space-md);
+            font-size: var(--text-base);
+        }
+
+        .error-message {
+            color: var(--text-primary);
+            font-size: var(--text-sm);
+            line-height: 1.4;
+            margin-bottom: var(--space-lg);
+        }
+
+        .download-progress {
+            background: var(--tertiary-bg);
+            border: var(--border-width) solid var(--border-color);
+            height: 20px;
+            margin: var(--space-md) 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--accent-green);
+            width: 0%;
+            transition: width var(--anim-speed-normal);
+        }
+
+        .progress-bar.corrupted {
+            background: repeating-linear-gradient(
+                90deg,
+                var(--accent-red) 0px,
+                var(--accent-red) 10px,
+                var(--primary-bg) 10px,
+                var(--primary-bg) 20px
+            );
+            animation: progressGlitch 1s infinite;
+        }
+
+        .progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: var(--text-xs);
+            color: var(--text-primary);
+            font-weight: bold;
+        }
+
+        @keyframes fileGlitch {
+            0%, 95% { transform: translateX(0); }
+            96% { transform: translateX(-1px); }
+            97% { transform: translateX(1px); }
+            98% { transform: translateX(-1px); }
+            99% { transform: translateX(1px); }
+            100% { transform: translateX(0); }
+        }
+
+        @keyframes ghostFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-3px); }
+        }
+
+        @keyframes iconGlitch {
+            0%, 90% { filter: hue-rotate(0deg); }
+            95% { filter: hue-rotate(180deg); }
+            100% { filter: hue-rotate(0deg); }
+        }
+
+        @keyframes errorShake {
+            0%, 100% { transform: translate(-50%, -50%); }
+            10%, 30%, 50%, 70%, 90% { transform: translate(-52%, -50%); }
+            20%, 40%, 60%, 80% { transform: translate(-48%, -50%); }
+        }
+
+        @keyframes progressGlitch {
+            0%, 80% { opacity: 1; }
+            85%, 95% { opacity: 0.5; }
+            90% { opacity: 0.8; }
+            100% { opacity: 1; }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .file-details {
+                display: none !important;
+            }
+
+            .file-list {
+                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+                gap: var(--space-sm);
+            }
+
+            .explorer-toolbar {
+                flex-direction: column;
+                align-items: stretch;
+                gap: var(--space-xs);
+            }
+
+            .path-bar {
+                min-width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bios-interface">
+        <!-- BIOS Header -->
+        <header class="bios-header">
+            <div class="bios-title">
+                <span class="glitch" data-text="CORRUPTED_FILES.exe">CORRUPTED_FILES.exe</span>
+                <span class="system-time" id="systemTime">00:00:00</span>
+            </div>
+            <nav class="boot-menu">
+                <a href="index.html" class="menu-item">
+                    <span class="menu-key">[F1]</span> HOME
+                </a>
+                <a href="logs.html" class="menu-item">
+                    <span class="menu-key">[F2]</span> LOGS
+                </a>
+                <a href="memories.html" class="menu-item">
+                    <span class="menu-key">[F3]</span> MEMORIES
+                </a>
+                <a href="terminal.html" class="menu-item">
+                    <span class="menu-key">[F4]</span> TERMINAL
+                </a>
+                <a href="corrupted.html" class="menu-item active">
+                    <span class="menu-key">[F12]</span> CORRUPTED_FILES
+                </a>
+            </nav>
+        </header>
+
+        <!-- File Explorer -->
+        <main class="bios-main" style="padding: 0;">
+            <div class="file-explorer">
+                <!-- Toolbar -->
+                <div class="explorer-toolbar">
+                    <input type="text" class="path-bar" value="C:\GHOST_BIOS\CORRUPTED\" readonly>
+                    
+                    <div class="view-mode-toggle">
+                        <button class="view-btn active" data-view="grid">GRID</button>
+                        <button class="view-btn" data-view="list">LIST</button>
+                    </div>
+
+                    <button class="action-btn" onclick="scanForCorruption()">
+                        SCAN_CORRUPTION
+                    </button>
+                    <button class="action-btn dangerous" onclick="purgeAll()">
+                        PURGE_ALL
+                    </button>
+                </div>
+
+                <!-- Content Area -->
+                <div class="explorer-content">
+                    <!-- File List -->
+                    <div class="file-list" id="fileList">
+                        <!-- Files will be dynamically generated -->
+                    </div>
+
+                    <!-- File Details Panel -->
+                    <div class="file-details" id="fileDetails">
+                        <div class="details-title">FILE_ANALYSIS.exe</div>
+                        <div id="detailsContent">
+                            Select a file to view corruption analysis
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="bios-footer">
+            <div class="footer-info">
+                <span>Warning: Files may be corrupted</span>
+                <span>Download at your own risk</span>
+                <span>Ghost entities detected</span>
+                <span class="ghost-indicator" id="ghostIndicator">CORRUPTION: CRITICAL</span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Error Popup -->
+    <div class="error-popup" id="errorPopup">
+        <div class="error-title">SYSTEM ERROR</div>
+        <div class="error-message" id="errorMessage">
+            An unexpected error has occurred while processing your request.
+        </div>
+        <div class="download-progress" id="downloadProgress" style="display: none;">
+            <div class="progress-bar" id="progressBar"></div>
+            <div class="progress-text" id="progressText">0%</div>
+        </div>
+        <button class="action-btn" onclick="closeError()">ACKNOWLEDGE</button>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        class CorruptedFiles {
+            constructor() {
+                this.files = [];
+                this.currentView = 'grid';
+                this.selectedFile = null;
+                this.init();
+            }
+
+            init() {
+                this.generateFiles();
+                this.renderFiles();
+                this.initEventListeners();
+            }
+
+            generateFiles() {
+                const fileTypes = [
+                    { ext: 'exe', icon: 'EXE', type: 'Executable' },
+                    { ext: 'dll', icon: 'DLL', type: 'Dynamic Library' },
+                    { ext: 'sys', icon: 'SYS', type: 'System File' },
+                    { ext: 'drv', icon: 'DRV', type: 'Device Driver' },
+                    { ext: 'ocx', icon: 'OCX', type: 'ActiveX Control' },
+                    { ext: 'bat', icon: 'BAT', type: 'Batch File' }
+                ];
+
+                const corruptedNames = [
+                    'Reality', 'Soul', 'Phantom', 'Spectral', 'Ghost', 'Wraith',
+                    'Shadow', 'Void', 'Haunted', 'Cursed', 'Forbidden', 'Lost',
+                    'Broken', 'Shattered', 'Nightmare', 'Terror', 'Doom', 'Chaos',
+                    'Error', 'Glitch', 'Bug', 'Virus', 'Malware', 'Trojan'
+                ];
+
+                const corruptionLevels = [
+                    { name: 'Mild', level: 25, color: '--accent-yellow' },
+                    { name: 'Moderate', level: 50, color: '--accent-red' },
+                    { name: 'Severe', level: 75, color: '--accent-red' },
+                    { name: 'Critical', level: 100, color: '--accent-red' }
+                ];
+
+                // Generate 30 corrupted files
+                for (let i = 0; i < 30; i++) {
+                    const fileType = fileTypes[Math.floor(Math.random() * fileTypes.length)];
+                    const baseName = corruptedNames[Math.floor(Math.random() * corruptedNames.length)];
+                    const corruption = corruptionLevels[Math.floor(Math.random() * corruptionLevels.length)];
+                    
+                    let fileName = baseName;
+                    
+                    // Add corruption to filename
+                    if (Math.random() < 0.3) {
+                        fileName = this.corruptText(fileName);
+                    }
+                    
+                    // Add version numbers sometimes
+                    if (Math.random() < 0.4) {
+                        fileName += `_v${Math.floor(Math.random() * 9) + 1}.${Math.floor(Math.random() * 9)}`;
+                    }
+                    
+                    fileName += '.' + fileType.ext;
+
+                    const file = {
+                        id: i + 1,
+                        name: fileName,
+                        originalName: baseName + '.' + fileType.ext,
+                        type: fileType.type,
+                        icon: fileType.icon,
+                        extension: fileType.ext,
+                        size: this.generateFileSize(),
+                        corruption: corruption,
+                        status: Math.random() < 0.3 ? 'haunted' : (Math.random() < 0.5 ? 'corrupted' : 'broken'),
+                        lastModified: this.generateRandomDate(),
+                        created: this.generateRandomDate(),
+                        checksum: this.generateChecksum(),
+                        description: this.generateDescription(baseName, fileType.type),
+                        isDownloadable: Math.random() < 0.4 // 40% chance of being "downloadable" (will fail)
+                    };
+
+                    this.files.push(file);
+                }
+
+                // Sort files by name
+                this.files.sort((a, b) => a.name.localeCompare(b.name));
+            }
+
+            corruptText(text) {
+                return text.split('').map((char, index) => {
+                    if (Math.random() < 0.2) {
+                        const corruptions = ['̴', '̵', '̶', '̷', '̸', '?', '#', '@', '$', '%'];
+                        return char + corruptions[Math.floor(Math.random() * corruptions.length)];
+                    }
+                    return char;
+                }).join('');
+            }
+
+            generateFileSize() {
+                const size = Math.floor(Math.random() * 10000000) + 1024; // 1KB to 10MB
+                return this.formatFileSize(size);
+            }
+
+            formatFileSize(bytes) {
+                if (bytes === 0) return '0 B';
+                const k = 1024;
+                const sizes = ['B', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+            }
+
+            generateRandomDate() {
+                const now = new Date();
+                const pastDate = new Date(now.getTime() - Math.random() * 365 * 24 * 60 * 60 * 1000);
+                return pastDate;
+            }
+
+            generateChecksum() {
+                const chars = '0123456789ABCDEF';
+                let checksum = '';
+                for (let i = 0; i < 32; i++) {
+                    checksum += chars[Math.floor(Math.random() * chars.length)];
+                }
+                return checksum;
+            }
+
+            generateDescription(baseName, fileType) {
+                const descriptions = {
+                    'Reality': 'Core reality processing engine',
+                    'Soul': 'Digital consciousness management system',
+                    'Phantom': 'Ghost process control interface',
+                    'Spectral': 'Paranormal activity detection module',
+                    'Ghost': 'Ethereal entity communication protocol',
+                    'Wraith': 'Shadow process management daemon',
+                    'Shadow': 'Dark data processing unit',
+                    'Void': 'Null space navigation system',
+                    'Haunted': 'Cursed memory allocation manager',
+                    'Cursed': 'Malevolent file system driver',
+                    'Forbidden': 'Restricted access control module',
+                    'Lost': 'Missing data recovery utility',
+                    'Broken': 'Damaged system component',
+                    'Shattered': 'Fragmented memory manager',
+                    'Nightmare': 'Terror-inducing display driver',
+                    'Terror': 'Fear-based authentication system',
+                    'Doom': 'Apocalyptic system terminator',
+                    'Chaos': 'Random number entropy generator',
+                    'Error': 'Exception handling framework',
+                    'Glitch': 'Anomaly detection service',
+                    'Bug': 'Software defect analyzer',
+                    'Virus': 'Self-replicating code module',
+                    'Malware': 'Malicious software framework',
+                    'Trojan': 'Deceptive security backdoor'
+                };
+
+                return descriptions[baseName] || `Unknown ${fileType} component`;
+            }
+
+            initEventListeners() {
+                // View mode toggle
+                document.querySelectorAll('.view-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        this.currentView = btn.dataset.view;
+                        this.renderFiles();
+                    });
+                });
+
+                // File details panel toggle on mobile
+                document.addEventListener('click', (e) => {
+                    if (window.innerWidth <= 768 && !e.target.closest('.file-details')) {
+                        document.getElementById('fileDetails').classList.remove('active');
+                    }
+                });
+            }
+
+            renderFiles() {
+                const fileList = document.getElementById('fileList');
+                fileList.className = `file-list ${this.currentView === 'list' ? 'list-view' : ''}`;
+
+                fileList.innerHTML = this.files.map(file => `
+                    <div class="file-item ${file.status} ${this.currentView === 'list' ? 'list-view' : ''}" 
+                         onclick="selectFile(${file.id})" 
+                         ondblclick="downloadFile(${file.id})">
+                        <div class="file-icon ${file.extension} ${file.status === 'corrupted' ? 'corrupted' : ''}">
+                            ${file.icon}
+                        </div>
+                        <div class="file-name" title="${file.originalName}">
+                            ${file.name}
+                        </div>
+                        <div class="file-size">${file.size}</div>
+                        <div class="file-status ${file.status}"></div>
+                    </div>
+                `).join('');
+            }
+
+            selectFile(fileId) {
+                this.selectedFile = this.files.find(f => f.id === fileId);
+                this.showFileDetails();
+                
+                // Highlight selected file
+                document.querySelectorAll('.file-item').forEach(item => {
+                    item.classList.remove('selected');
+                });
+                event.currentTarget.classList.add('selected');
+            }
+
+            showFileDetails() {
+                if (!this.selectedFile) return;
+
+                const detailsPanel = document.getElementById('fileDetails');
+                const detailsContent = document.getElementById('detailsContent');
+                
+                detailsPanel.classList.add('active');
+
+                const corruptionColor = this.selectedFile.corruption.level > 75 ? 'var(--accent-red)' : 
+                                       this.selectedFile.corruption.level > 50 ? 'var(--accent-red)' :
+                                       'var(--accent-yellow)';
+
+                detailsContent.innerHTML = `
+                    <div class="details-section">
+                        <h4>File Information</h4>
+                        <div class="details-property">
+                            <span class="label">Name:</span>
+                            <span class="value">${this.selectedFile.originalName}</span>
+                        </div>
+                        <div class="details-property">
+                            <span class="label">Type:</span>
+                            <span class="value">${this.selectedFile.type}</span>
+                        </div>
+                        <div class="details-property">
+                            <span class="label">Size:</span>
+                            <span class="value">${this.selectedFile.size}</span>
+                        </div>
+                        <div class="details-property">
+                            <span class="label">Created:</span>
+                            <span class="value">${this.selectedFile.created.toLocaleDateString()}</span>
+                        </div>
+                        <div class="details-property">
+                            <span class="label">Modified:</span>
+                            <span class="value">${this.selectedFile.lastModified.toLocaleDateString()}</span>
+                        </div>
+                    </div>
+
+                    <div class="corruption-indicator">
+                        <div class="corruption-level">
+                            <span style="color: ${corruptionColor}; font-weight: bold;">
+                                ${this.selectedFile.corruption.name} Corruption
+                            </span>
+                        </div>
+                        <div class="corruption-bar">
+                            <div class="corruption-fill" style="width: ${this.selectedFile.corruption.level}%; background: ${corruptionColor};"></div>
+                        </div>
+                        <div style="font-size: var(--text-xs); color: var(--text-secondary); margin-top: var(--space-xs);">
+                            Integrity: ${100 - this.selectedFile.corruption.level}%
+                        </div>
+                    </div>
+
+                    <div class="details-section">
+                        <h4>Description</h4>
+                        <p style="font-size: var(--text-xs); color: var(--text-primary); line-height: 1.4;">
+                            ${this.selectedFile.description}
+                        </p>
+                    </div>
+
+                    <div class="details-section">
+                        <h4>Checksum (MD5)</h4>
+                        <div style="font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-secondary); word-break: break-all;">
+                            ${this.selectedFile.checksum}
+                        </div>
+                    </div>
+
+                    <div class="details-section">
+                        <h4>Status</h4>
+                        <div class="details-property">
+                            <span class="label">Condition:</span>
+                            <span class="value" style="color: var(--accent-red);">${this.selectedFile.status.toUpperCase()}</span>
+                        </div>
+                        <div class="details-property">
+                            <span class="label">Downloadable:</span>
+                            <span class="value">${this.selectedFile.isDownloadable ? 'YES' : 'NO'}</span>
+                        </div>
+                        <div class="details-property">
+                            <span class="label">Risk Level:</span>
+                            <span class="value" style="color: var(--accent-red);">EXTREME</span>
+                        </div>
+                    </div>
+
+                    <div class="file-actions">
+                        <button class="action-btn dangerous" onclick="downloadFile(${this.selectedFile.id})">
+                            ATTEMPT_DOWNLOAD
+                        </button>
+                        <button class="action-btn" onclick="analyzeFile(${this.selectedFile.id})">
+                            ANALYZE_CORRUPTION
+                        </button>
+                        <button class="action-btn" onclick="quarantineFile(${this.selectedFile.id})">
+                            QUARANTINE_FILE
+                        </button>
+                        <button class="action-btn dangerous" onclick="deleteFile(${this.selectedFile.id})">
+                            PERMANENT_DELETE
+                        </button>
+                    </div>
+                `;
+            }
+
+            downloadFile(fileId) {
+                const file = this.files.find(f => f.id === fileId);
+                if (!file) return;
+
+                this.showErrorPopup(
+                    'DOWNLOAD ERROR',
+                    `Cannot download "${file.originalName}"<br><br>
+                    Error Code: 0x${Math.floor(Math.random() * 16777215).toString(16).toUpperCase()}<br>
+                    Reason: File corruption level too high<br>
+                    Status: ${file.status.toUpperCase()}<br><br>
+                    The file may be possessed by digital entities.`,
+                    true
+                );
+            }
+
+            showErrorPopup(title, message, showProgress = false) {
+                const popup = document.getElementById('errorPopup');
+                const titleEl = popup.querySelector('.error-title');
+                const messageEl = document.getElementById('errorMessage');
+                const progressEl = document.getElementById('downloadProgress');
+
+                titleEl.textContent = title;
+                messageEl.innerHTML = message;
+                
+                if (showProgress) {
+                    progressEl.style.display = 'block';
+                    this.simulateFailedDownload();
+                } else {
+                    progressEl.style.display = 'none';
+                }
+
+                popup.classList.add('active');
+
+                if (window.ghostBIOS) {
+                    window.ghostBIOS.playGlitchSound();
+                }
+            }
+
+            simulateFailedDownload() {
+                const progressBar = document.getElementById('progressBar');
+                const progressText = document.getElementById('progressText');
+                let progress = 0;
+
+                const interval = setInterval(() => {
+                    progress += Math.random() * 15 + 5;
+                    
+                    if (progress >= 100) {
+                        progress = 100;
+                        progressBar.style.width = '100%';
+                        progressText.textContent = '100%';
+                        
+                        // Corrupt the progress bar
+                        setTimeout(() => {
+                            progressBar.classList.add('corrupted');
+                            progressText.textContent = 'ERROR';
+                            
+                            setTimeout(() => {
+                                progressBar.style.width = '0%';
+                                progressText.textContent = 'DOWNLOAD FAILED';
+                            }, 1000);
+                        }, 500);
+                        
+                        clearInterval(interval);
+                        return;
+                    }
+
+                    progressBar.style.width = progress + '%';
+                    progressText.textContent = Math.floor(progress) + '%';
+
+                    // Random glitches during download
+                    if (Math.random() < 0.2) {
+                        progressBar.classList.add('corrupted');
+                        setTimeout(() => {
+                            progressBar.classList.remove('corrupted');
+                        }, 200);
+                    }
+                }, 100);
+            }
+
+            scanForCorruption() {
+                this.showErrorPopup(
+                    'CORRUPTION SCAN COMPLETE',
+                    `Scan Results:<br><br>
+                    Files Scanned: ${this.files.length}<br>
+                    Corrupted Files: ${this.files.filter(f => f.status === 'corrupted').length}<br>
+                    Haunted Files: ${this.files.filter(f => f.status === 'haunted').length}<br>
+                    Broken Files: ${this.files.filter(f => f.status === 'broken').length}<br><br>
+                    Recommendation: Format hard drive and contact a priest.`
+                );
+            }
+
+            purgeAllFiles() {
+                // Simulate purging files
+                let fileIndex = 0;
+                const purgeInterval = setInterval(() => {
+                    if (fileIndex >= this.files.length) {
+                        clearInterval(purgeInterval);
+                        this.showErrorPopup(
+                            'PURGE FAILED',
+                            'Unable to purge corrupted files.<br><br>The files appear to be defending themselves.<br>Some entities refuse to be deleted.<br><br>Consider a full system exorcism.'
+                        );
+                        return;
+                    }
+
+                    const fileElements = document.querySelectorAll('.file-item');
+                    if (fileElements[fileIndex]) {
+                        fileElements[fileIndex].style.animation = 'fileGlitch 0.3s ease-in-out, fadeOut 0.5s ease-in 0.3s forwards';
+                    }
+                    
+                    fileIndex++;
+                }, 100);
+            }
+        }
+
+        // Global functions
+        function selectFile(fileId) {
+            if (window.corruptedFiles) {
+                window.corruptedFiles.selectFile(fileId);
+            }
+        }
+
+        function downloadFile(fileId) {
+            if (window.corruptedFiles) {
+                window.corruptedFiles.downloadFile(fileId);
+            }
+        }
+
+        function analyzeFile(fileId) {
+            const messages = [
+                'File analysis reveals traces of digital ectoplasm',
+                'Spectral signatures detected in file header',
+                'File appears to be sentient and hostile',
+                'Warning: File may cause existential crisis',
+                'Analysis inconclusive - file corrupted beyond recognition'
+            ];
+            
+            if (window.corruptedFiles) {
+                window.corruptedFiles.showErrorPopup(
+                    'ANALYSIS COMPLETE',
+                    messages[Math.floor(Math.random() * messages.length)]
+                );
+            }
+        }
+
+        function quarantineFile(fileId) {
+            if (window.corruptedFiles) {
+                window.corruptedFiles.showErrorPopup(
+                    'QUARANTINE FAILED',
+                    'File cannot be quarantined.<br><br>The digital entity inside is too powerful.<br>It has achieved root access to reality.dll<br><br>Recommendation: Run away.'
+                );
+            }
+        }
+
+        function deleteFile(fileId) {
+            if (window.corruptedFiles) {
+                window.corruptedFiles.showErrorPopup(
+                    'DELETE FAILED',
+                    'Access Denied.<br><br>File is currently in use by:<br>- Ghost.exe<br>- Phantom.dll<br>- Soul.sys<br>- Your worst nightmares<br><br>Cannot delete file while spirits are active.'
+                );
+            }
+        }
+
+        function scanForCorruption() {
+            if (window.corruptedFiles) {
+                window.corruptedFiles.scanForCorruption();
+            }
+        }
+
+        function purgeAll() {
+            if (window.corruptedFiles) {
+                window.corruptedFiles.purgeAllFiles();
+            }
+        }
+
+        function closeError() {
+            const popup = document.getElementById('errorPopup');
+            popup.classList.remove('active');
+            
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            progressBar.classList.remove('corrupted');
+            progressBar.style.width = '0%';
+            progressText.textContent = '0%';
+        }
+
+        // Initialize corrupted files browser
+        document.addEventListener('DOMContentLoaded', () => {
+            window.corruptedFiles = new CorruptedFiles();
+        });
+
+        // Add CSS for selected file and fade out animation
+        const additionalStyles = document.createElement('style');
+        additionalStyles.textContent = `
+            .file-item.selected {
+                background: var(--accent-red);
+                color: var(--text-bright);
+                border-color: var(--accent-red);
+                box-shadow: var(--glow-red);
+            }
+            
+            @keyframes fadeOut {
+                from { opacity: 1; transform: scale(1); }
+                to { opacity: 0; transform: scale(0.8); }
+            }
+        `;
+        document.head.appendChild(additionalStyles);
+    </script>
+</body>
+</html>
