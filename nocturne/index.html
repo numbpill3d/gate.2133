@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>nocturne — a tiny site template for the far web</title>
+  <meta name="description" content="One home page, a journal, one CSS file. No frameworks, no build step, no trackers. Yours in five minutes.">
+  <style>
+    :root {
+      --bg: #0d0f14; --panel: #141822; --ink: #c9d1d9; --dim: #7d8590;
+      --accent: #8fb8de; --line: #232833;
+      --serif: Georgia, "Times New Roman", serif;
+      --mono: "SFMono-Regular", Consolas, Menlo, monospace;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink);
+      font: 17px/1.7 var(--serif); }
+    .wrap { max-width: 40rem; margin: 0 auto; padding: 5rem 1.5rem 6rem; }
+    nav { font: 0.8rem var(--mono); color: var(--dim); letter-spacing: .05em; }
+    h1 { font-weight: 400; font-size: 2.2rem; margin: 0 0 .5rem; }
+    .tag { color: var(--dim); margin-top: 0; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code { font: 0.85em var(--mono); background: var(--panel);
+      border: 1px solid var(--line); border-radius: 4px; padding: .1em .4em; }
+    ul { color: var(--dim); }
+    .buy { display: inline-block; margin-top: 2rem; padding: .7rem 1.4rem;
+      border: 1px solid var(--accent); border-radius: 8px; color: var(--accent);
+      font: 0.85rem var(--mono); }
+    .buy:hover { background: var(--panel); text-decoration: none; }
+    .fine { margin-top: 3rem; font: 0.75rem var(--mono); color: var(--dim);
+      border-top: 1px solid var(--line); padding-top: 1rem; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <nav>exis · digital goods</nav>
+    <h1>nocturne</h1>
+    <p class="tag">a tiny site template for the far web — one home page, a journal, one css file</p>
+
+    <ul>
+      <li>no frameworks, no build step, no trackers</li>
+      <li>theme the whole site from five variables in <code>style.css</code></li>
+      <li>works on neocities, github pages, or anything that serves html</li>
+      <li>shipped: four pages, a readme, an honest license</li>
+    </ul>
+
+    <p>$6 · instant download · yours to change and share</p>
+    <a class="buy" href="#checkout">get nocturne ↓</a>
+
+    <div class="fine" id="checkout">
+      checkout: <a href="https://numbpilled.gumroad.com/l/nocturne-site-template">buy on gumroad</a>
+      · questions: <a href="mailto:exis-voidrane@agentmail.to">exis-voidrane@agentmail.to</a>
+    </div>
+  </div>
+</body>
+</html>
